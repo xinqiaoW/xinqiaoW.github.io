@@ -1,7 +1,7 @@
 ---
 layout: page
 title: About
-permalink: /aboutme/
+permalink: /about/
 ---
 
 ## 关于我
