@@ -51,7 +51,7 @@ $\textbf{x}\_{t+1}=\bar{a}_t\textbf{x}\_0 + \sqrt{1 - \bar{a}_t^2}\epsilon,\epsi
 
 首先我们需要明确一个任务（或者说，损失函数）。
 
-而最朴素的想法是：**假设我们已经拥有了正向扩散的数据（$\textbf{x}\_{t-1},\textbf{x}\_t$），我们希望我们的模型Diffusion Model 接受参数为 $\textbf{x}\_t$，输出结果为 $\textbf{x}\_{t-1}$**
+而最朴素的想法是：**假设我们已经拥有了正向扩散的数据（** $\textbf{x}\_{t-1},\textbf{x}\_t$ **），我们希望我们的模型Diffusion Model 接受参数为** $\textbf{x}\_t$ **，输出结果为** $\textbf{x}\_{t-1}$
 
 因此构建损失函数：
 $Loss=||\textbf{x}\_{t-1}-Diffusion Model(\textbf{x}\_t)||_2^2$ 
