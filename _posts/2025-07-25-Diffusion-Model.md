@@ -73,7 +73,7 @@ $\hat{\textbf{x}}\_t=\frac{1}{a_t}(\textbf{x}\_{t+1}-b_t\epsilon_{\theta}(t + 1,
 
 不妨将 $\hat{\textbf{x}}\_t=\frac{1}{a_t}(\textbf{x}\_{t+1}-b_t\epsilon_{\theta}(t + 1, \textbf{x}_{t + 1}))$ 带入 损失函数并做一个简单的整理：
 
-$Loss=\(\frac{b_{t-1}}{a_{t-1}}\)^2 || \epsilon_{\theta}(t,\textbf{x}\_{t})-\epsilon_{t-1}||_2^2$  
+$Loss=(\frac{b_{t-1}}{a_{t-1}})^2 \parallel \epsilon_{\theta}(t,\textbf{x}\_{t})-\epsilon_{t-1}\parallel_2^2$  
 
 忽略常数因子，只考虑后半部分：
 我们希望平均意义（或者说 期望）上的损失最小，存在无数的路径可以得到 $\textbf{x}_t$。 不妨记路径为 $x$，则期望损失为 **$\sum_{x}p(x)Loss(x)$** 由于这是一个期望，所以我们可以采样 $x$，利用大数定律求解。
