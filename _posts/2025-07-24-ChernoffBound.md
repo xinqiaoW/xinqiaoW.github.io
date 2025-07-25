@@ -1,4 +1,5 @@
 ---
+title:Chernoff Bound
 toc:true
 ---
 # Chernoff Bound 切尔诺夫限
