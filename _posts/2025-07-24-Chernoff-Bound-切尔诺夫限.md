@@ -1,8 +1,3 @@
----
-title:Chernoff Bound
-toc:true
----
-# Chernoff Bound 切尔诺夫限
 ### 马尔可夫不等式 & 切比雪夫不等式
 首先，让我们回顾马尔可夫不等式。
 
