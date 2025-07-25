@@ -83,4 +83,4 @@ $Loss=(\frac{b_{t-1}}{a_{t-1}})^2 \parallel \epsilon_{\theta}(t,\textbf{x}\_{t})
 
 这样做存在一个显著的问题：**方差太大（采样的随机变量越多，方差也往往越大）**
 
-所幸的是，根据前面提到的 $\textbf{x}\_{t+1}=\bar{a}\_t\textbf{x}\_0 + \sqrt{1 - \bar{a}_t^2}\epsilon,\epsilon \sim \mathcal{N}(0, I)$ ，我们可以发现，前面的 $\epsilon_0,\epsilon_1,\dots,\epsilon_{t-2}$ 可以融合成一个 正态分布，不妨记为 $\bar{\epsilon}\_{t-2}$ ，因此我们只需要 采样 $\bar{\epsilon}\_{t-2}, \epsilon_{t-1}$ 即可针对轨迹进行采样，从而得到损失的期望。
+所幸的是，根据前面提到的 $\textbf{x}\_{t+1}=\bar{a}\_t\textbf{x}\_0 + \sqrt{1 - \bar{a}\_t^2}\epsilon,\epsilon \sim \mathcal{N}(0, I)$ ，我们可以发现，前面的 $\epsilon_0,\epsilon_1,\dots,\epsilon_{t-2}$ 可以融合成一个 正态分布，不妨记为 $\bar{\epsilon}\_{t-2}$ ，因此我们只需要 采样 $\bar{\epsilon}\_{t-2}, \epsilon_{t-1}$ 即可针对轨迹进行采样，从而得到损失的期望。
