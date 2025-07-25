@@ -71,9 +71,9 @@ $\hat{\textbf{x}}\_t=\frac{1}{a_t}(\textbf{x}\_{t+1}-b_t\epsilon_{\theta}(t + 1,
 
 每个粒子就如同在空间中的一个场运动，这个场是依靠神经网络强大的拟合能力得到的。
 
-不妨将 $\hat{\textbf{x}}_t=\frac{1}{a_t}(\textbf{x}_{t+1}-b_t\epsilon_{\theta}(t + 1, \textbf{x}_{t + 1}))$ 带入 损失函数并做一个简单的整理：
+不妨将 $\hat{\textbf{x}}\_t=\frac{1}{a_t}(\textbf{x}\_{t+1}-b_t\epsilon_{\theta}(t + 1, \textbf{x}_{t + 1}))$ 带入 损失函数并做一个简单的整理：
 
-$Loss=(\frac{b_{t-1}}{a_{t-1}})^2 || \epsilon_{\theta}(t,\textbf{x}_{t})-\epsilon_{t-1}||_2^2$  
+$Loss=(\frac{b_{t-1}}{a_{t-1}})^2 || \epsilon_{\theta}(t,\textbf{x}\_{t})-\epsilon_{t-1}||_2^2$  
 
 忽略常数因子，只考虑后半部分：
 我们希望平均意义（或者说 期望）上的损失最小，存在无数的路径可以得到 $\textbf{x}_t$。 不妨记路径为 $x$，则期望损失为 **$\sum_{x}p(x)Loss(x)$** 由于这是一个期望，所以我们可以采样 $x$，利用大数定律求解。
@@ -83,4 +83,4 @@ $Loss=(\frac{b_{t-1}}{a_{t-1}})^2 || \epsilon_{\theta}(t,\textbf{x}_{t})-\epsilo
 
 这样做存在一个显著的问题：**方差太大（采样的随机变量越多，方差也往往越大）**
 
-所幸的是，根据前面提到的 $\textbf{x}_{t+1}=\bar{a}_t\textbf{x}_0 + \sqrt{1 - \bar{a}_t^2}\epsilon,\epsilon \sim \mathcal{N}(0, I)$ ，我们可以发现，前面的 $\epsilon_0,\epsilon_1,\dots,\epsilon_{t-2}$ 可以融合成一个 正态分布，不妨记为 $\bar{\epsilon}_{t-2}$ ，因此我们只需要 采样 $\bar{\epsilon}_{t-2}, \epsilon_{t-1}$ 即可针对轨迹进行采样，从而得到损失的期望。
+所幸的是，根据前面提到的 $\textbf{x}\_{t+1}=\bar{a}\_t\textbf{x}\_0 + \sqrt{1 - \bar{a}_t^2}\epsilon,\epsilon \sim \mathcal{N}(0, I)$ ，我们可以发现，前面的 $\epsilon_0,\epsilon_1,\dots,\epsilon_{t-2}$ 可以融合成一个 正态分布，不妨记为 $\bar{\epsilon}\_{t-2}$ ，因此我们只需要 采样 $\bar{\epsilon}\_{t-2}, \epsilon_{t-1}$ 即可针对轨迹进行采样，从而得到损失的期望。
