@@ -6,6 +6,7 @@
 name: "WXQ's blog"
 # Short bio or description (displayed in the header)
 description: "一只程序猿的碎碎念，喜欢数学、AI"
+markdown: kramdown
 
 #
 # Flags below are optional
