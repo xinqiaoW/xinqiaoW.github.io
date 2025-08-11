@@ -58,7 +58,6 @@ TensorCore 整体上接受指令、矩阵 $A B C$、时钟信号、复位信号�
         end
    end
    endgenerate
-   
    generate
    for(i = 0; i < MatrixLength; i++) begin:add_1
         for(j = 0; j < MatrixLength; j++) begin:add_2
@@ -94,7 +93,6 @@ TensorCore 整体上接受指令、矩阵 $A B C$、时钟信号、复位信号�
         end
    end
    endgenerate
-   
    always @(posedge clk or posedge reset) begin
       if (reset) begin
          out <= 0; // each element of output matrix is 0.
@@ -118,27 +116,26 @@ TensorCore 整体上接受指令、矩阵 $A B C$、时钟信号、复位信号�
          end
         end
       end
-
    endmodule
 ```
+
 上面的便是我们的代码，用到了我们之前文章中提到过的浮点数加法器以及乘法器。
+
 ### 仿真结果
+
 ```
 [0] mode1: reset
 reset success
-
 [40000] mode3: random matrix integer
          0          0          0          0
          1          4          8         12
          1          9         16         24
          1         13         25         36
-
 [50000] mode4: random matrix fp_32
 0.000000 0.000000 0.000000 0.000000
 0.100000 4.000000 8.000000 12.000000
 0.100000 8.099999 16.000000 24.000000
 0.100000 12.099999 24.099998 36.000000
-
 [60000] mode4: random matrix fp_mix
 0.000000 0.000000 0.000000 0.000000
 0.099698 4.000000 8.000000 12.000000
