@@ -11,7 +11,7 @@ TensorCore 整体上接受指令、矩阵 $A B C$、时钟信号、复位信号�
    typedef logic        bool_t;
    typedef logic [3:0][3:0][31:0] input_t;
    typedef logic [15:0] vinstr_t;
-   module tensorcore \#(
+   module tensorcore #(
        parameter int unsigned DataWidth		= 32,
        parameter int unsigned MatrixLength   = 4, // The TensorCore can compute a MatrixLength x MatrixLength matrix's FMA
        parameter int unsigned INTeger = 0,
