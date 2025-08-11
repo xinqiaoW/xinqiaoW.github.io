@@ -6,7 +6,7 @@
 TensorCore 整体上接受指令、矩阵 $A B C$、时钟信号、复位信号作为输入；输出矩阵 $D$。每个时钟，TensorCore 分析指令，判断要进行什么形式的矩阵运算，随后分别进行处理。
 
 ### 代码
-```System Verilog
+```
    typedef logic [3:0][3:0][31:0] operand_t;
    typedef logic        bool_t;
    typedef logic [3:0][3:0][31:0] input_t;
@@ -141,7 +141,7 @@ reset success
 ```
 仿真结果如上，reset 信号有效；整数，全精度，混合精度结果均完全正确。同时，可以发现半精度确实带来了一定的精度损失。
 #### 附仿真文件
-```System Verilog
+```   
 `timescale 1ns / 1ps
 //////////////////////////////////////////////////////////////////////////////////
 // Company: 
