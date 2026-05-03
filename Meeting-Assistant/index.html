@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Meeting Assistant · 会议助手</title>
+    <meta
+      name="description"
+      content="Meeting Assistant 项目主页：云端共享会议、二维码签到、资料权限与 Android 本地提醒。"
+    />
+    <link rel="icon" href="https://raw.githubusercontent.com/MilesPoupart/Meeting-Assistant/master/Project/MeetingAssistant/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" />
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <header class="site-header" aria-label="主导航">
+      <a class="brand" href="#top" aria-label="Meeting Assistant 首页">
+        <img src="https://raw.githubusercontent.com/MilesPoupart/Meeting-Assistant/master/Project/MeetingAssistant/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" alt="" />
+        <span>Meeting Assistant</span>
+      </a>
+      <nav>
+        <a href="#features">功能</a>
+        <a href="#architecture">实现</a>
+        <a href="#demo">视频</a>
+        <a href="#deploy">部署</a>
+      </nav>
+    </header>
+
+    <main id="top">
+      <section class="hero" aria-labelledby="hero-title">
+        <img class="hero-mark" src="https://raw.githubusercontent.com/MilesPoupart/Meeting-Assistant/master/Project/MeetingAssistant/app/src/main/res/mipmap-xxxhdpi/ic_launcher.png" alt="" />
+        <div class="hero-content">
+          <p class="eyebrow">Android · Node.js · Cloud Sync</p>
+          <h1 id="hero-title">Meeting Assistant</h1>
+          <p class="hero-subtitle">
+            面向课程项目的会议协作工具：从本地会议记录扩展到云端账号、共享会议、二维码签到与资料权限管理。
+          </p>
+          <div class="hero-actions" aria-label="页面快捷入口">
+            <a class="primary-action" href="#demo">观看演示</a>
+            <a class="secondary-action" href="#architecture">查看实现</a>
+          </div>
+        </div>
+        <ul class="signal-strip" aria-label="项目核心能力">
+          <li>云端账号</li>
+          <li>共享会议</li>
+          <li>二维码签到</li>
+          <li>资料权限</li>
+        </ul>
+      </section>
+
+      <section class="intro section-grid">
+        <div>
+          <p class="section-kicker">项目定位</p>
+          <h2>把个人会议助手升级为多人协作空间</h2>
+        </div>
+        <div class="intro-copy">
+          <p>
+            Meeting Assistant 保留 Android 端的会议列表、提醒、笔记和本地缓存，同时引入轻量云端后端，让组织者和参会人围绕同一个会议对象协作。
+          </p>
+          <p>
+            后端负责身份认证、会议可见性、参会人状态、二维码解析和共享资料访问策略；客户端负责流畅的移动端体验和本地提醒。
+          </p>
+        </div>
+      </section>
+
+      <section id="features" class="feature-section">
+        <div class="section-heading">
+          <p class="section-kicker">核心功能</p>
+          <h2>会议前、中、后的关键动作都有落点</h2>
+        </div>
+        <div class="feature-list">
+          <article>
+            <span>01</span>
+            <h3>账号与云端会议</h3>
+            <p>用户注册登录后，会议列表跨设备同步；组织者通过用户名邀请参会人。</p>
+          </article>
+          <article>
+            <span>02</span>
+            <h3>二维码签到</h3>
+            <p>会议生成 shareCode，扫码后由服务端确认会议可见性并回写签到状态。</p>
+          </article>
+          <article>
+            <span>03</span>
+            <h3>共享资料</h3>
+            <p>资料上传到云端，并支持上传者可见、全体可见、指定参会人可见三种策略。</p>
+          </article>
+          <article>
+            <span>04</span>
+            <h3>本地体验保留</h3>
+            <p>Android 端保留 SQLite、本地提醒、资料下载缓存和后台周期同步。</p>
+          </article>
+        </div>
+      </section>
+
+      <section id="architecture" class="architecture">
+        <div class="section-heading">
+          <p class="section-kicker">实现架构</p>
+          <h2>轻量服务端，清晰业务边界</h2>
+        </div>
+        <div class="flow" aria-label="系统架构流程">
+          <div>
+            <b>Android Client</b>
+            <p>Activity / Fragment、ApiClient、WorkManager</p>
+          </div>
+          <div>
+            <b>HTTP API</b>
+            <p>server.js 路由、JSON 解析、Bearer Token 鉴权</p>
+          </div>
+          <div>
+            <b>MeetingStore</b>
+            <p>会议、参会人、附件、签到与权限规则</p>
+          </div>
+          <div>
+            <b>JSON State</b>
+            <p>users、sessions、meetings 文件持久化</p>
+          </div>
+        </div>
+        <div class="implementation-notes">
+          <p>
+            服务端没有引入第三方框架，便于课程项目部署和审阅。业务判断集中在 MeetingStore，客户端只消费按当前用户裁剪后的 MeetingView。
+          </p>
+          <p>
+            保存数据时先写临时文件再 rename，配合健康检查接口和 systemd 配置，可以完成基本的线上演示与恢复。
+          </p>
+        </div>
+      </section>
+
+      <section id="demo" class="demo section-grid">
+        <div>
+          <p class="section-kicker">演示视频</p>
+          <h2>一段视频展示完整会议协作流程</h2>
+          <p class="muted">
+            当前视频为占位素材。正式发布时，把 video 标签的 source 替换为你的演示视频即可。
+          </p>
+        </div>
+        <div class="video-frame">
+          <video controls preload="metadata">
+            <source
+              src="https://interactive-examples.mdn.mozilla.net/media/cc0-videos/flower.mp4"
+              type="video/mp4"
+            />
+            当前浏览器不支持视频播放。
+          </video>
+        </div>
+      </section>
+
+      <section class="api-section">
+        <div class="section-heading">
+          <p class="section-kicker">后端接口</p>
+          <h2>面向移动端的一组 REST API</h2>
+        </div>
+        <div class="endpoint-grid">
+          <code>POST /api/auth/register</code>
+          <code>POST /api/auth/login</code>
+          <code>GET /api/meetings</code>
+          <code>POST /api/meetings</code>
+          <code>PUT /api/meetings/:id</code>
+          <code>POST /api/meetings/:id/checkin</code>
+          <code>POST /api/meetings/resolve-code</code>
+          <code>POST /api/meetings/:id/attachments</code>
+        </div>
+      </section>
+
+      <section id="deploy" class="deploy section-grid">
+        <div>
+          <p class="section-kicker">运行部署</p>
+          <h2>本地、云主机与 GitHub Pages 各自独立</h2>
+        </div>
+        <div class="deploy-panel">
+          <p>后端服务：</p>
+          <pre><code>cd Server
+node src/server.js</code></pre>
+          <p>GitHub Pages：</p>
+          <pre><code>Settings → Pages → Deploy from a branch
+Branch: main
+Folder: /</code></pre>
+        </div>
+      </section>
+    </main>
+
+    <footer class="site-footer">
+      <span>Meeting Assistant</span>
+      <span>Android app + Node backend project</span>
+    </footer>
+  </body>
+</html>
