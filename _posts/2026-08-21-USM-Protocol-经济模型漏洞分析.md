@@ -4,6 +4,14 @@ tags:
 title: "USM Protocol 经济模型漏洞分析"
 ---
 
+<style>
+.posts .entry li,
+.posts .entry a {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+</style>
+
 - 交易 Hash ==0xfae5e751b8ce01457cbb6b529839f24a0cff50faaabcbd0fd02ca0cf559b050e==
 - 损失 ==~70.83 ETH==
 - 事故还原：Attacker 利用 USM Protocol 设计的[[经济模型]]上的漏洞实现了攻击，首先利用 FlashLoan 借入了 11579 ETH，随后使用 fund() 向 USM Protocol 合约账户存入这 11579 ETH，紧接着分 64 次使用 defund() 取出，每次取出约 182 ETH ，最终获利约 70.83 ETH。
