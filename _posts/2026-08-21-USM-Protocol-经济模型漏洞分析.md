@@ -1,6 +1,7 @@
 ---
 tags:
   - EconomicModelFault
+title: "USM Protocol 经济模型漏洞分析"
 ---
 
 - 交易 Hash ==0xfae5e751b8ce01457cbb6b529839f24a0cff50faaabcbd0fd02ca0cf559b050e==
@@ -250,4 +251,3 @@ fund() 的时候使用的几何平均数，defund() 的时候使用的算数平�
 ![揭示乘数因子：FUM 收益被放大的原因](/images/posts/usm-protocol-economic-model/leverage-mechanics-09.jpg)
 
 ![杠杆源于资产结构中的空间挤压](/images/posts/usm-protocol-economic-model/leverage-mechanics-10.jpg)
-
