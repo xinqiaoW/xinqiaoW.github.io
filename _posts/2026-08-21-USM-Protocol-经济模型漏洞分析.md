@@ -10,6 +10,33 @@ title: "USM Protocol 经济模型漏洞分析"
   overflow-wrap: anywhere;
   word-break: break-word;
 }
+
+.usm-viz-card {
+  margin: 1rem 0 0.5rem;
+  overflow: hidden;
+  border: 1px solid #243042;
+  border-radius: 12px;
+  background: #0b0f14;
+}
+
+.usm-viz-frame {
+  display: block;
+  width: 100%;
+  height: 820px;
+  border: 0;
+  background: #0b0f14;
+}
+
+.usm-viz-open {
+  margin-top: 0.5rem;
+  font-size: 0.92em;
+}
+
+@media (max-width: 640px) {
+  .usm-viz-frame {
+    height: 680px;
+  }
+}
 </style>
 
 - 交易 Hash <mark>0xfae5e751b8ce01457cbb6b529839f24a0cff50faaabcbd0fd02ca0cf559b050e</mark>
@@ -235,6 +262,21 @@ title: "USM Protocol 经济模型漏洞分析"
     }
 ```
 fund() 的时候使用的几何平均数，defund() 的时候使用的算数平均数
+
+## 攻击全过程可视化
+
+下面的交互图按链上数据逐步复现 1 次 fund() 与 64 次 defund()，可以使用播放、前后步进和进度条观察资金池、债务线与攻击收益的变化。
+
+<div class="usm-viz-card">
+  <iframe
+    class="usm-viz-frame"
+    src="/visualizations/usm-attack/"
+    title="USM 攻击全过程交互式可视化"
+    loading="lazy"
+  ></iframe>
+</div>
+
+<p class="usm-viz-open"><a href="/visualizations/usm-attack/" target="_blank" rel="noopener">在新窗口打开完整可视化</a></p>
 
 ## 形象化描述：杠杆机制
 

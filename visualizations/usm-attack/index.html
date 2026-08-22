@@ -1,0 +1,1623 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>USM 攻击全过程可视化 — fund ×1 + defund ×64（链上逐位复现）</title>
+<link rel="icon" href="data:,">
+<style>
+  :root {
+    --bg: #0b0f14; --panel: #121923; --panel2: #0f151d; --border: #243042;
+    --text: #e6edf3; --muted: #8b98a9; --dim: #5b6774;
+    --blue: #4da3ff; --green: #3fb950; --red: #f85149; --amber: #d29922;
+    --purple: #bc8cff; --cyan: #39c5cf;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    font-size: 13px;
+  }
+  .wrap { max-width: 1460px; margin: 0 auto; padding: 14px 16px 40px; }
+  h1 { font-size: 18px; margin: 0 0 4px; }
+  .sub { color: var(--muted); font-size: 12px; margin-bottom: 10px; }
+  .sub a { color: var(--blue); text-decoration: none; }
+  .sub code, .mono { font-family: "Cascadia Mono", Consolas, monospace; font-variant-numeric: tabular-nums; }
+  .badges { display: flex; flex-wrap: wrap; gap: 8px; margin: 8px 0 12px; }
+  .badge {
+    border: 1px solid var(--border); border-radius: 6px; padding: 4px 10px;
+    font-size: 12px; background: var(--panel2); color: var(--muted);
+  }
+  .badge.ok { color: var(--green); border-color: rgba(63,185,80,.45); }
+  .badge.fail { color: var(--red); border-color: rgba(248,81,73,.45); }
+  .badge b { color: var(--text); font-weight: 600; }
+
+  .controls {
+    position: sticky; top: 0; z-index: 20;
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    background: rgba(11,15,20,.94); backdrop-filter: blur(6px);
+    border: 1px solid var(--border); border-radius: 10px; padding: 8px 12px; margin-bottom: 12px;
+  }
+  .controls button {
+    background: #1a2332; color: var(--text); border: 1px solid var(--border);
+    border-radius: 6px; padding: 6px 12px; cursor: pointer; font-size: 13px;
+  }
+  .controls button:hover { background: #223046; }
+  .controls button.primary { background: #1f4d8f; border-color: #2f6bc0; }
+  .controls input[type=range] { flex: 1; min-width: 160px; accent-color: var(--blue); }
+  .controls select { background: #1a2332; color: var(--text); border: 1px solid var(--border); border-radius: 6px; padding: 5px 8px; }
+  .stepinfo { color: var(--muted); font-size: 12px; min-width: 90px; text-align: right; }
+  .stepdesc {
+    background: var(--panel2); border: 1px solid var(--border); border-radius: 8px;
+    padding: 8px 12px; margin-bottom: 12px; color: #c3cedc; font-size: 13px; min-height: 21px;
+  }
+  .stepdesc b { color: var(--amber); }
+
+  .compare { margin-bottom: 12px; }
+  .comparevizgrid { display: grid; grid-template-columns: minmax(0, 1.05fr) minmax(420px, .95fr); gap: 10px; margin-top: 8px; }
+  .flowviz, .trajectoryviz { background: var(--panel2); border: 1px solid var(--border); border-radius: 9px; padding: 10px 12px; min-width: 0; }
+  .floworigin { width: min(360px, 82%); margin: 0 auto 18px; padding: 8px 12px; text-align: center; border: 1px solid var(--blue); border-radius: 8px; background: rgba(77,163,255,.08); position: relative; }
+  .floworigin::after { content: ''; position: absolute; left: 50%; bottom: -19px; height: 18px; border-left: 1px solid #3b4b61; }
+  .floworigin .k { color: var(--muted); font-size: 10px; }
+  .floworigin .v { color: var(--blue); font-size: 17px; font-weight: 700; font-variant-numeric: tabular-nums; }
+  .flowlanes { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; position: relative; }
+  .flowlanes::before { content: ''; position: absolute; left: 25%; right: 25%; top: -10px; border-top: 1px solid #3b4b61; }
+  .flowlane { border: 1px solid var(--border); border-radius: 8px; padding: 9px; min-width: 0; }
+  .flowlane.actual { border-color: rgba(63,185,80,.45); }
+  .flowlane.oneshot { border-color: rgba(248,81,73,.45); }
+  .lanetitle { min-height: 34px; display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+  .lanetitle b { font-size: 13px; }
+  .lanetitle span { color: var(--dim); font-size: 9px; text-align: right; max-width: 55%; }
+  .flowbar { display: flex; width: 100%; height: 28px; overflow: hidden; border-radius: 5px; background: #182231; margin: 7px 0 6px; }
+  .flowbar > i { display: block; height: 100%; min-width: 3px; transition: width .2s ease; }
+  .flowbar .redeemed.actual { background: var(--green); }
+  .flowbar .redeemed.oneshot { background: var(--amber); }
+  .flowbar .remaining { background: var(--blue); }
+  .flowlabels { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; font-size: 10px; color: var(--dim); }
+  .flowlabels div:last-child { text-align: right; }
+  .flowlabels b { display: block; color: var(--text); font-size: 12px; font-variant-numeric: tabular-nums; }
+  .laneoutcome { display: flex; justify-content: space-between; gap: 8px; margin-top: 8px; padding-top: 7px; border-top: 1px solid #1f2a3a; font-size: 10px; color: var(--dim); }
+  .laneoutcome b { display: block; margin-top: 2px; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .charttitle { display: flex; justify-content: space-between; gap: 8px; align-items: baseline; }
+  .charttitle b { font-size: 13px; }
+  .charttitle span { color: var(--dim); font-size: 9px; }
+  .comparechart { display: block; width: 100%; height: 230px; margin-top: 4px; }
+  .chartlegend { display: flex; flex-wrap: wrap; gap: 12px; color: var(--muted); font-size: 10px; }
+  .chartlegend i { display: inline-block; width: 14px; border-top: 2px solid; margin-right: 4px; vertical-align: 3px; }
+  .chartstatus { margin-top: 5px; color: var(--muted); font-size: 10px; font-variant-numeric: tabular-nums; }
+  .factorviz { margin-top: 10px; background: var(--panel2); border: 1px solid var(--border); border-radius: 9px; padding: 10px 12px; }
+  .factorviz h3 { margin: 0; font-size: 13px; }
+  .formulaflow { margin: 7px 0 9px; padding: 7px 9px; border-radius: 6px; background: #0b1119; color: var(--muted); font-size: 10px; line-height: 1.6; overflow-wrap: anywhere; }
+  .formulaflow code { color: var(--cyan); }
+  .factorhead, .factorrow { display: grid; grid-template-columns: minmax(135px,.8fr) minmax(150px,1fr) minmax(150px,1fr) minmax(210px,1.25fr); gap: 9px; align-items: center; }
+  .factorhead { padding: 0 8px 6px; color: var(--dim); font-size: 10px; }
+  .factorhead .actualh { color: var(--green); }
+  .factorhead .oneshoth { color: var(--red); }
+  .factorrow { padding: 7px 8px; border-top: 1px solid #1b2533; }
+  .factorname b { display: block; font-size: 11px; }
+  .factorname code { color: var(--cyan); font-size: 9px; }
+  .factorcell { min-width: 0; }
+  .factorvalue { font-size: 12px; font-weight: 650; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .factorbar { height: 5px; margin: 4px 0 3px; background: #1b2635; border-radius: 3px; overflow: hidden; }
+  .factorbar i { display: block; height: 100%; min-width: 0; border-radius: 3px; transition: width .18s ease; }
+  .factorcell.actual .factorbar i { background: var(--green); }
+  .factorcell.oneshot .factorbar i { background: var(--red); }
+  .factorsub, .factornote { color: var(--dim); font-size: 9px; line-height: 1.45; }
+  .factornote { color: var(--muted); }
+  .factorinsight { margin-top: 8px; padding: 8px 10px; background: rgba(188,140,255,.07); border-left: 3px solid var(--purple); color: #c3cedc; font-size: 11px; line-height: 1.6; }
+  .compareverdict { margin-top: 9px; padding: 8px 10px; border-left: 3px solid var(--amber); background: rgba(210,153,34,.08); color: #c3cedc; line-height: 1.55; }
+  @media (max-width: 1050px) {
+    .comparevizgrid { grid-template-columns: 1fr; }
+  }
+  @media (max-width: 620px) {
+    .flowlanes { grid-template-columns: 1fr; }
+    .flowlanes::before { display: none; }
+    .floworigin { margin-bottom: 9px; }
+    .floworigin::after { display: none; }
+    .comparechart { height: 210px; }
+  }
+  @media (max-width: 800px) {
+    .factorhead { display: none; }
+    .factorrow { grid-template-columns: 1fr 1fr; }
+    .factorname, .factornote { grid-column: 1 / -1; }
+    .factorcell.actual::before { content: '实际当前分块'; color: var(--green); font-size: 9px; }
+    .factorcell.oneshot::before { content: '一次性全卖'; color: var(--red); font-size: 9px; }
+  }
+
+  .grid { display: grid; grid-template-columns: 440px 1fr; gap: 12px; }
+  .grid > *, .bignum { min-width: 0; }
+  @media (max-width: 1050px) { .grid { grid-template-columns: minmax(0, 1fr); } }
+  @media (max-width: 620px) {
+    .bigrow { flex-direction: column; }
+    .bignum { width: 100%; }
+  }
+
+  .panel { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; }
+  .panel h2 { font-size: 14px; margin: 0 0 4px; }
+  .panel .hint { color: var(--dim); font-size: 11px; margin-bottom: 8px; }
+
+  .bigrow { display: flex; gap: 10px; margin-bottom: 10px; }
+  .bignum {
+    flex: 1; background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px;
+  }
+  .bignum .k { color: var(--dim); font-size: 11px; }
+  .bignum .v { font-size: 20px; font-weight: 650; margin-top: 2px; font-variant-numeric: tabular-nums; }
+  .bignum .v.blue { color: var(--blue); } .bignum .v.green { color: var(--green); }
+  .bignum .v.red { color: var(--red); } .bignum .v.amber { color: var(--amber); }
+
+  .barwrap { position: relative; }
+  .barsvg { width: 100%; height: 400px; display: block; }
+  .legend { display: flex; flex-wrap: wrap; gap: 12px; font-size: 11px; color: var(--muted); margin-top: 6px; }
+  .legend i { display: inline-block; width: 10px; height: 10px; border-radius: 2px; margin-right: 4px; vertical-align: -1px; }
+  .splitstats { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
+  .splitstat {
+    flex: 1; min-width: 120px; background: var(--panel2); border: 1px solid var(--border);
+    border-radius: 8px; padding: 7px 10px;
+  }
+  .splitstat .k { color: var(--dim); font-size: 11px; }
+  .splitstat .v { font-size: 15px; font-weight: 600; margin-top: 2px; font-variant-numeric: tabular-nums; }
+
+  .gauges { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 10px; }
+  .gauge {
+    background: var(--panel2); border: 1px solid var(--border); border-radius: 8px; padding: 8px 10px;
+  }
+  .gauge .gk { color: var(--muted); font-size: 11px; display: flex; justify-content: space-between; }
+  .gauge .gv { font-size: 16px; font-weight: 650; margin: 3px 0 4px; font-variant-numeric: tabular-nums; }
+  .gauge .gbar { height: 6px; background: #1a2332; border-radius: 3px; overflow: hidden; }
+  .gauge .gbar i { display: block; height: 100%; width: 0%; transition: width .12s linear; border-radius: 3px; }
+  .gauge svg.spark { width: 100%; height: 30px; margin-top: 4px; display: block; }
+  .gauge .gsub { color: var(--dim); font-size: 10px; margin-top: 2px; font-variant-numeric: tabular-nums; }
+
+  table.events { width: 100%; border-collapse: collapse; font-size: 12px; }
+  table.events th, table.events td { padding: 4px 8px; text-align: right; border-bottom: 1px solid #1a2230; white-space: nowrap; }
+  table.events th { color: var(--dim); font-weight: 500; position: sticky; top: 0; background: var(--panel); }
+  table.events td:first-child, table.events th:first-child, table.events td:nth-child(2) { text-align: left; }
+  table.events tr { cursor: pointer; }
+  table.events tr:hover { background: #182235; }
+  table.events tr.cur { background: #1c2c4a; outline: 1px solid #2f4a7a; }
+  .tblwrap { max-height: 380px; overflow-y: auto; border: 1px solid var(--border); border-radius: 8px; }
+  .tag { display: inline-block; border-radius: 4px; padding: 0 6px; font-size: 11px; border: 1px solid var(--border); }
+  .tag.fund { color: var(--purple); border-color: rgba(188,140,255,.4); }
+  .tag.defund { color: var(--cyan); border-color: rgba(57,197,207,.4); }
+  .tag.init { color: var(--dim); }
+  .tag.repay { color: var(--green); border-color: rgba(63,185,80,.4); }
+  .foot { color: var(--dim); font-size: 11px; margin-top: 14px; line-height: 1.7; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>USM（Minimalist USD v1）攻击全过程可视化：1×fund() + 64×defund()</h1>
+  <div class="sub">
+    攻击交易 <code class="mono">0xfae5e751…cf559b050e</code>（区块 25,716,150，2026-08-09 08:12:47 UTC，攻击者 <span class="mono">0xb92b2E47…a50Fc</span>）·
+    净利 <b style="color:var(--red)">70.830977367697708372 ETH</b> ·
+    合约 <a href="https://etherscan.io/address/0x2a7FFf44C19f39468064ab5e5c304De01D591675" target="_blank" rel="noopener">USM 0x2a7FFf44…D591675</a> ·
+    所有数值由页面内 BigInt 引擎按合约代码实时计算（未预计算），与链上逐 wei 校验
+  </div>
+
+  <div class="badges" id="badges"></div>
+
+  <div class="panel compare" id="comparison">
+    <h2>同一资金池，两种卖法：拆分几乎抽空，一次性只抽走一半</h2>
+    <div class="hint">两条路径共享完全相同的 fund() 后状态。左侧按同一总量尺度拆解 ETH 去向；右侧按卖出进度比较池余额（纵轴为对数尺度，以清楚显示 61.76 ETH 与 104.20 ETH 债务线）。</div>
+    <div class="comparevizgrid">
+      <div class="flowviz">
+        <div class="floworigin">
+          <div class="k">共同起点 · fund() 后资金池</div>
+          <div class="v" id="postFundPool">—</div>
+        </div>
+        <div class="flowlanes">
+          <div class="flowlane actual">
+            <div class="lanetitle"><b style="color:var(--green)">实际 · 64 次卖出</b><span>链上 64/64 逐 wei 匹配</span></div>
+            <div class="flowbar" id="splitFlowBar" role="img" aria-label="实际拆分路径资金去向">
+              <i class="redeemed actual" id="splitRedeemBar"></i><i class="remaining" id="splitPoolBar"></i>
+            </div>
+            <div class="flowlabels">
+              <div>赎回给攻击者<b id="splitRedeem">—</b></div>
+              <div>留在池中<b id="splitPool">—</b></div>
+            </div>
+            <div class="laneoutcome">
+              <div>偿还闪贷后<b id="splitNet" style="color:var(--green)">—</b></div>
+              <div style="text-align:right">实时负债率<b id="splitDr" style="color:var(--red)">—</b></div>
+            </div>
+          </div>
+          <div class="flowlane oneshot">
+            <div class="lanetitle"><b style="color:var(--red)">反事实 · 1 次全卖</b><span id="oneShotStatus">—</span></div>
+            <div class="flowbar" id="oneFlowBar" role="img" aria-label="一次性全卖路径资金去向">
+              <i class="redeemed oneshot" id="oneRedeemBar"></i><i class="remaining" id="onePoolBar"></i>
+            </div>
+            <div class="flowlabels">
+              <div>赎回给攻击者<b id="oneRedeem">—</b></div>
+              <div>留在池中<b id="onePool">—</b></div>
+            </div>
+            <div class="laneoutcome">
+              <div>偿还闪贷后<b id="oneNet" style="color:var(--red)">—</b></div>
+              <div style="text-align:right">实时负债率<b id="oneDr">—</b></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="trajectoryviz">
+        <div class="charttitle"><b>池余额轨迹（共享坐标）</b><span>卖出进度 0% → 100% · 纵轴对数</span></div>
+        <svg class="comparechart" id="compareChart" viewBox="0 0 620 250" role="img" aria-labelledby="compareChartTitle compareChartDesc">
+          <title id="compareChartTitle">64 次拆分与一次性卖出的资金池余额轨迹</title>
+          <desc id="compareChartDesc">绿色曲线逐步下降到 61.76 ETH；红色虚线在一次交易后下降到 5887.16 ETH；黄色线是 104.20 ETH 实时债务线。</desc>
+        </svg>
+        <div class="chartlegend">
+          <span><i style="border-color:var(--green)"></i>实际 64 次</span>
+          <span><i style="border-color:var(--red);border-top-style:dashed"></i>一次性全卖</span>
+          <span><i style="border-color:var(--amber);border-top-style:dashed"></i>实时债务线</span>
+        </div>
+        <div class="chartstatus" id="compareChartStatus">—</div>
+      </div>
+    </div>
+    <div class="factorviz" id="factorComparison">
+      <h3>中间变量因果链：为什么一次性卖出把均价砍到约一半</h3>
+      <div class="formulaflow">
+        <code>FUM 输入</code> → <code>lowerBoundEthQty1 = pool − FUM × p0</code> → <code>debtRatio2 = min(debtRatio1, 80%)</code> →
+        <code>netFumDelta2</code> → <code>adjShrinkFactor</code> → <code>p2</code> → <code>avg = (p0 + p2) / 2</code> → <code>ETH out</code>
+      </div>
+      <div class="factorhead">
+        <div>计算阶段</div>
+        <div class="actualh" id="actualFactorHead">实际当前分块</div>
+        <div class="oneshoth">反事实 · 一次性全卖</div>
+        <div>对最终结果的作用</div>
+      </div>
+      <div id="factorRows"></div>
+      <div class="factorinsight" id="factorInsight">—</div>
+    </div>
+    <div class="compareverdict" id="compareVerdict">—</div>
+  </div>
+
+  <div class="controls">
+    <button id="btnStart" title="回到开头">⏮</button>
+    <button id="btnPrev" title="上一步">◀</button>
+    <button id="btnPlay" class="primary" title="播放/暂停">▶ 播放</button>
+    <button id="btnNext" title="下一步">▶|</button>
+    <button id="btnEnd" title="跳到结尾">⏭</button>
+    <input type="range" id="scrub" min="0" max="66" step="1" value="0">
+    <select id="speed">
+      <option value="250">快 (0.25s)</option>
+      <option value="600" selected>中 (0.6s)</option>
+      <option value="1200">慢 (1.2s)</option>
+      <option value="2500">极慢 (2.5s)</option>
+    </select>
+    <span class="stepinfo" id="stepinfo">步骤 0 / 66</span>
+  </div>
+
+  <div class="stepdesc" id="stepdesc"></div>
+
+  <div class="grid">
+    <div class="panel">
+      <h2>资金池拆分（按实时预言机价 $1921.813593）</h2>
+      <div class="hint">蓝色 = 用于归还 USM 债权人的 ETH；绿色 = FUM 可兑换的残值部分；红色 = 池子低于债务线的穿仓缺口</div>
+      <div class="bigrow">
+        <div class="bignum"><div class="k">资金池总 ETH</div><div class="v blue" id="poolV">—</div></div>
+        <div class="bignum"><div class="k">实时负债率</div><div class="v amber" id="drRtV">—</div></div>
+        <div class="bignum"><div class="k">攻击者净盈亏 ETH</div><div class="v" id="netV">—</div></div>
+      </div>
+      <div class="barwrap">
+        <svg class="barsvg" id="barsvg" viewBox="0 0 420 400" preserveAspectRatio="none">
+          <defs>
+            <pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">
+              <rect width="7" height="7" fill="rgba(248,81,73,.16)"></rect>
+              <line x1="0" y1="0" x2="0" y2="7" stroke="#f85149" stroke-width="1.4"></line>
+            </pattern>
+          </defs>
+          <rect id="barBg" x="30" y="0" width="360" height="400" fill="none"></rect>
+          <rect id="barDeficit" x="30" width="360" fill="url(#hatch)"></rect>
+          <rect id="barFum" x="30" width="360" fill="var(--green)"></rect>
+          <rect id="barUsm" x="30" width="360" fill="var(--blue)"></rect>
+          <line id="debtLine" x1="30" x2="390" stroke="#d29922" stroke-width="1.6" stroke-dasharray="6 4"></line>
+          <text id="debtLineLbl" x="387" text-anchor="end" fill="#d29922" font-size="12"></text>
+        </svg>
+      </div>
+      <div class="legend">
+        <span><i style="background:var(--blue)"></i>USM 债务部分</span>
+        <span><i style="background:var(--green)"></i>FUM 残值部分</span>
+        <span><i style="background:rgba(248,81,73,.4)"></i>穿仓缺口</span>
+        <span><i style="background:var(--amber)"></i>USM 债务线</span>
+      </div>
+      <div class="splitstats">
+        <div class="splitstat"><div class="k">USM 债务部分（ETH）</div><div class="v" id="usmPartV" style="color:var(--blue)">—</div></div>
+        <div class="splitstat"><div class="k">FUM 残值部分（ETH）</div><div class="v" id="fumPartV" style="color:var(--green)">—</div></div>
+        <div class="splitstat"><div class="k">缺口（ETH，穿仓时）</div><div class="v" id="deficitV" style="color:var(--red)">—</div></div>
+      </div>
+    </div>
+
+    <div>
+      <div class="panel" style="margin-bottom:12px">
+        <h2>系统因子与中间变量（引擎实时计算，全部 67 步轨迹 + 当前值）</h2>
+        <div class="hint">条形 = 当前值相对全程 min–max 的大小；曲线 = 全步轨迹（白色圆点 = 当前位置，亮色 = 已走过的轨迹）</div>
+        <div class="gauges" id="gauges"></div>
+      </div>
+      <div class="panel">
+        <h2>完整事件流（点击任意行跳转）</h2>
+        <div class="tblwrap"><table class="events" id="events"></table></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    引擎 = <code class="mono">WadMath.sol</code>（wad 定点 + Yield 式 log₂/2ˣ 近似，含 57 位掩码逐字提取）与 <code class="mono">USM.sol</code>（checkForFreshOraclePrice / checkIfUnderwater / fumFromFund / ethFromDefund / _storeState / loadState）的 BigInt 精确移植。
+    初始状态取自区块 25,716,149 链上存储：池 132.588942983107019337 ETH、USM 总量 200,251.453135834662058063、FUM 总量 329,463.502710697641576863、陈旧中间价 $2257.793612、缓存预言机价 $2304.031122、最后活动 2026-05-02（距攻击 <b id="gapDays">—</b>）。
+    第一次 fund() 触发价格刷新：实时中位数 <b>$1921.813593</b>（Chainlink 8 位小数 192181359300 × 1e10，为三源中位数）。校验锚点（仅用于比对，不参与计算）：链上 FUM 铸造量、64 笔 defund 真实赎回额（Blockscout internal-transactions）、最终池子与净利润。
+  </div>
+</div>
+
+<script>
+// usm_engine.js — auto-generated by gen_engine.js. Do not edit by hand.
+// BigInt-exact port of:
+//   - WadMath.sol  (wad fixed-point arithmetic, incl. log_2/pow_2 from Yield's math)
+//   - USM.sol      (checkForFreshOraclePrice / checkIfUnderwater / fumFromFund / ethFromDefund / _storeState / loadState)
+// All intermediate values are computed live during the simulation; nothing is pre-computed.
+(function (root, factory) {
+  if (typeof module === 'object' && module.exports) { module.exports = factory(); }
+  else { root.USMEngine = factory(); }
+})(typeof self !== 'undefined' ? self : this, function () {
+  'use strict';
+
+  // ---------- constants ----------
+  const WAD = 1000000000000000000n;
+  const WAD_MINUS_1 = WAD - 1n;
+  const HALF_WAD = WAD / 2n;
+  const MAX_DEBT_RATIO = WAD * 8n / 10n;          // 80%
+  const FOUR_WAD = 4n * WAD;
+  const TRILLION = 1000000000000n;
+  const HALF_TRILLION = TRILLION / 2n;
+  const BID_ASK_ADJUSTMENT_DECAY_PER_SECOND = 988514020352896135n;  // halving per minute
+  const BID_ASK_ADJUSTMENT_ZERO_OUT_PERIOD = 600n;
+  const MIN_FUM_BUY_PRICE_DECAY_PER_SECOND = 999991977495368426n;   // halving per day
+  const PREFUND_FUM_PRICE_IN_ETH = WAD / 4000n;
+  const UINT128_MAX = (1n << 128n) - 1n;
+  const INT256_MAX = (1n << 255n) - 1n;
+  const UINT256_MAX = (1n << 256n) - 1n;
+  const FLOOR_LOG_2_WAD_SCALED = 158961593653514369813532673448321674075n;
+  const CEIL_LOG_2_WAD_SCALED  = 158961593653514369813532673448321674076n;
+
+  // ---------- WadMath.sol port ----------
+  function wadMulDown(x, y) { return x * y / WAD; }
+  function wadMulUp(x, y) { return (x * y + WAD_MINUS_1) / WAD; }
+  function wadSquaredDown(x) { return x * x / WAD; }
+  function wadSquaredUp(x) { return (x * x + WAD_MINUS_1) / WAD; }
+  function wadDivDown(x, y) { return x * WAD / y; }
+  function wadDivUp(x, y) { return (x * WAD + y - 1n) / y; }
+  function wadMulDivDown(w, x, y) { return w * x / y; }
+  function wadMulDivUp(w, x, y) { return (w * x + y - 1n) / y; }
+  function wadMax(x, y) { return x > y ? x : y; }
+  function wadMin(x, y) { return x < y ? x : y; }
+
+  // rpow-style integer exponentiation (n is NOT wad-scaled)
+  function wadPowInt(x, n) {
+    let z = (n % 2n !== 0n) ? x : WAD;
+    n /= 2n;
+    while (n !== 0n) {
+      x = wadMulDown(x, x);
+      if (n % 2n !== 0n) z = wadMulDown(z, x);
+      n /= 2n;
+    }
+    return z;
+  }
+
+  // log_2: base-2 log of a uint128, scaled by 2^121. Masks extracted verbatim from WadMath.sol.
+  const LOG2_MASKS = [
+  1329227995784915872903807060280344576n,
+  664613997892457936451903530140172288n,
+  332306998946228968225951765070086144n,
+  166153499473114484112975882535043072n,
+  83076749736557242056487941267521536n,
+  41538374868278621028243970633760768n,
+  20769187434139310514121985316880384n,
+  10384593717069655257060992658440192n,
+  5192296858534827628530496329220096n,
+  2596148429267413814265248164610048n,
+  1298074214633706907132624082305024n,
+  649037107316853453566312041152512n,
+  324518553658426726783156020576256n,
+  162259276829213363391578010288128n,
+  81129638414606681695789005144064n,
+  40564819207303340847894502572032n,
+  20282409603651670423947251286016n,
+  10141204801825835211973625643008n,
+  5070602400912917605986812821504n,
+  2535301200456458802993406410752n,
+  1267650600228229401496703205376n,
+  633825300114114700748351602688n,
+  316912650057057350374175801344n,
+  158456325028528675187087900672n,
+  79228162514264337593543950336n,
+  39614081257132168796771975168n,
+  19807040628566084398385987584n,
+  9903520314283042199192993792n,
+  4951760157141521099596496896n,
+  2475880078570760549798248448n,
+  1237940039285380274899124224n,
+  618970019642690137449562112n,
+  309485009821345068724781056n,
+  154742504910672534362390528n,
+  77371252455336267181195264n,
+  38685626227668133590597632n,
+  19342813113834066795298816n,
+  9671406556917033397649408n,
+  4835703278458516698824704n,
+  2417851639229258349412352n,
+  1208925819614629174706176n,
+  604462909807314587353088n,
+  302231454903657293676544n,
+  151115727451828646838272n,
+  75557863725914323419136n,
+  37778931862957161709568n,
+  18889465931478580854784n,
+  9444732965739290427392n,
+  4722366482869645213696n,
+  2361183241434822606848n,
+  1180591620717411303424n,
+  590295810358705651712n,
+  295147905179352825856n,
+  147573952589676412928n,
+  73786976294838206464n,
+  36893488147419103232n,
+  18446744073709551616n,
+];
+  function log_2(x) {
+    if (x <= 0n || x > UINT128_MAX) throw new Error('log_2: x out of uint128 range');
+    let b = x;
+    let l = 0xFE000000000000000000000000000000n;
+    if (b < 0x10000000000000000n) { l -= 0x80000000000000000000000000000000n; b <<= 64n; }
+    if (b < 0x1000000000000000000000000n) { l -= 0x40000000000000000000000000000000n; b <<= 32n; }
+    if (b < 0x10000000000000000000000000000n) { l -= 0x20000000000000000000000000000000n; b <<= 16n; }
+    if (b < 0x1000000000000000000000000000000n) { l -= 0x10000000000000000000000000000000n; b <<= 8n; }
+    if (b < 0x10000000000000000000000000000000n) { l -= 0x8000000000000000000000000000000n; b <<= 4n; }
+    if (b < 0x40000000000000000000000000000000n) { l -= 0x4000000000000000000000000000000n; b <<= 2n; }
+    if (b < 0x80000000000000000000000000000000n) { l -= 0x2000000000000000000000000000000n; b <<= 1n; }
+    for (let i = 0; i < LOG2_MASKS.length; i++) {
+      b = b * b >> 127n;
+      if (b >= 0x100000000000000000000000000000000n) { b >>= 1n; l |= LOG2_MASKS[i]; }
+    }
+    return l & UINT128_MAX;   // uint128 z
+  }
+
+  // pow_2: 2^(x / 2^121), x is uint128. Constants extracted verbatim from WadMath.sol.
+  const POW2_MASKS = [
+  1329227995784915872903807060280344576n,
+  664613997892457936451903530140172288n,
+  332306998946228968225951765070086144n,
+  166153499473114484112975882535043072n,
+  83076749736557242056487941267521536n,
+  41538374868278621028243970633760768n,
+  20769187434139310514121985316880384n,
+  10384593717069655257060992658440192n,
+  5192296858534827628530496329220096n,
+  2596148429267413814265248164610048n,
+  1298074214633706907132624082305024n,
+  649037107316853453566312041152512n,
+  324518553658426726783156020576256n,
+  162259276829213363391578010288128n,
+  81129638414606681695789005144064n,
+  40564819207303340847894502572032n,
+  20282409603651670423947251286016n,
+  10141204801825835211973625643008n,
+  5070602400912917605986812821504n,
+  2535301200456458802993406410752n,
+  1267650600228229401496703205376n,
+  633825300114114700748351602688n,
+  316912650057057350374175801344n,
+  158456325028528675187087900672n,
+  79228162514264337593543950336n,
+  39614081257132168796771975168n,
+  19807040628566084398385987584n,
+  9903520314283042199192993792n,
+  4951760157141521099596496896n,
+  2475880078570760549798248448n,
+  1237940039285380274899124224n,
+  618970019642690137449562112n,
+  309485009821345068724781056n,
+  154742504910672534362390528n,
+  77371252455336267181195264n,
+  38685626227668133590597632n,
+  19342813113834066795298816n,
+  9671406556917033397649408n,
+  4835703278458516698824704n,
+  2417851639229258349412352n,
+  1208925819614629174706176n,
+  604462909807314587353088n,
+  302231454903657293676544n,
+  151115727451828646838272n,
+  75557863725914323419136n,
+  37778931862957161709568n,
+  18889465931478580854784n,
+  9444732965739290427392n,
+  4722366482869645213696n,
+  2361183241434822606848n,
+  1180591620717411303424n,
+  590295810358705651712n,
+  295147905179352825856n,
+  147573952589676412928n,
+  73786976294838206464n,
+  36893488147419103232n,
+  18446744073709551616n,
+];
+  const POW2_CONSTS = [
+  240615969168004511545033772477625056927n,
+  202333105926173297125496651828617737974n,
+  185540276208459938995127072211809418384n,
+  177673977198940748734846910156470796722n,
+  173866790246890464404407762706616159231n,
+  171993899476345128343537119045365325556n,
+  171065033261874822595940777772823543072n,
+  170602483006197525731794653098558769826n,
+  170371677106169961072198743641682326478n,
+  170256391277944949404429781835504013320n,
+  170198777621163499323692536336548950768n,
+  170169978104217854377876329753244978067n,
+  170155580173245455967435406681542540831n,
+  170148381664589264188264121794167075801n,
+  170144782524463033278659842022288166931n,
+  170142982982949679487232657532161835518n,
+  170142083219330354936406822533083064278n,
+  170141633339305019738455505264886668260n,
+  170141408399738432532757026661446510774n,
+  170141295930066658856216481259611261873n,
+  170141239695258651978022083544863869716n,
+  170141211577861618526256192788535371030n,
+  170141197519164844296870116959045370194n,
+  170141190489816892806259301753401806335n,
+  170141186975143025966969200493503633784n,
+  170141185217806119773827320282516896189n,
+  170141184339137673483882090760919633795n,
+  170141183899803452040565893393489568380n,
+  170141183680136341744321897776541000721n,
+  170141183570302786702553425574561373992n,
+  170141183515386009208257570855170605031n,
+  170141183487927620467756738838371904170n,
+  170141183474198426099168096665383839958n,
+  170141183467333828915289219037703518822n,
+  170141183463901530323453641088561897173n,
+  170141183462185381027561817330165109975n,
+  170141183461327306379622396755010145895n,
+  170141183460898269055654309293443511686n,
+  170141183460683750393670671269162905346n,
+  170141183460576491062678953683648279718n,
+  170141183460522861397183120247547386271n,
+  170141183460496046564435209868661044386n,
+  170141183460482639148061256264008899654n,
+  170141183460475935439874279857880583840n,
+  170141183460472583585780791753865865071n,
+  170141183460470907658734047726620865471n,
+  170141183460470069695210675719188955617n,
+  170141183460469650713448989717020648177n,
+  170141183460469441222568146716323406328n,
+  170141183460469336477127725216071513372n,
+  170141183460469284104407514465969748886n,
+  170141183460469257918047409090924912141n,
+  170141183460469244824867356403404005143n,
+  170141183460469238278277330059643929487n,
+  170141183460469235004982316887763986120n,
+  170141183460469233368334810301824038052n,
+  170141183460469232550011057008854069922n,
+];
+  function pow_2(x) {
+    let r = 0x80000000000000000000000000000000n;
+    for (let i = 0; i < POW2_MASKS.length; i++) {
+      if ((x & POW2_MASKS[i]) > 0n) r = r * POW2_CONSTS[i] >> 127n;
+    }
+    r >>= 127n - (x >> 121n);
+    return r & UINT128_MAX;   // uint128 z
+  }
+
+  // x**y with both x, y wad-scaled (round down)
+  function wadPowDown(x, y) {
+    if (x > UINT128_MAX) throw new Error('wadPowDown: x exceeds uint128');
+    if (y < 0n || y > INT256_MAX) throw new Error('wadPowDown: y out of int256 range');
+    let exponent = log_2(x);
+    exponent -= CEIL_LOG_2_WAD_SCALED;              // unchecked in Solidity; no wrap for our ranges
+    exponent *= y;
+    exponent = exponent / WAD + FLOOR_LOG_2_WAD_SCALED;   // int division truncates toward zero (matches Solidity)
+    if (exponent < 0n || exponent > UINT128_MAX) throw new Error('wadPowDown: exponent out of range');
+    return pow_2(exponent);
+  }
+  function wadPowUp(x, y) { return wadDivUp(WAD, wadPowDown(wadDivDown(WAD, x), y)); }
+  function wadSqrtDown(y) { return wadPowDown(y, HALF_WAD); }
+  function wadSqrtUp(y) { return wadPowUp(y, HALF_WAD); }
+
+  // ---------- USM.sol port ----------
+  const SIDE_BUY = 0, SIDE_SELL = 1;
+
+  function adjustedEthUsdPrice(side, price, adjustment) {
+    // Apply the adjustment if (side == Buy and adj > 1), or (side == Sell and adj < 1):
+    if (side === SIDE_BUY ? (adjustment > WAD) : (adjustment < WAD)) {
+      return wadMul(price, adjustment, side === SIDE_BUY);   // Round up iff buy
+    }
+    return price;
+  }
+  function wadMul(x, y, roundUp) { return roundUp ? wadMulUp(x, y) : wadMulDown(x, y); }
+
+  function usmToEth(ethUsdPrice, usmAmount, roundUp) { return wadDiv(usmAmount, ethUsdPrice, roundUp); }
+  function wadDiv(x, y, roundUp) { return roundUp ? wadDivUp(x, y) : wadDivDown(x, y); }
+
+  // buffer = ethPool - usmValueInEth  (roundUp rounds the buffer up, i.e. usmValue down)
+  function ethBuffer(ethUsdPrice, ethInPool, usmSupply, roundUp) {
+    const usmValueInEth = usmToEth(ethUsdPrice, usmSupply, !roundUp);
+    return ethInPool - usmValueInEth;
+  }
+
+  function fumPrice(side, ethUsdPrice, ethInPool, usmEffectiveSupply, fumSupply, prefund) {
+    if (prefund) return PREFUND_FUM_PRICE_IN_ETH;
+    const roundUp = (side === SIDE_BUY);
+    const buffer = ethBuffer(ethUsdPrice, ethInPool, usmEffectiveSupply, roundUp);
+    return buffer <= 0n ? 0n : wadDiv(buffer, fumSupply, roundUp);
+  }
+
+  function debtRatio(ethUsdPrice, ethInPool, usmSupply) {
+    const ethPoolValueInUsd = wadMulDown(ethInPool, ethUsdPrice);
+    return usmSupply === 0n ? 0n
+         : (ethPoolValueInUsd === 0n ? UINT256_MAX : wadDivUp(usmSupply, ethPoolValueInUsd));
+  }
+
+  function checkIfUnderwater(usmActualSupply, ethPool_, ethUsdPrice, oldTimeUnderwater, currentTime) {
+    const debtRatio_ = debtRatio(ethUsdPrice, ethPool_, usmActualSupply);
+    if (debtRatio_ <= MAX_DEBT_RATIO) {
+      return { timeUnderwater: 0n, usmSupplyForFumBuys: usmActualSupply, debtRatio: debtRatio_ };
+    }
+    const timeUnderwater = (oldTimeUnderwater !== 0n ? oldTimeUnderwater : currentTime);
+    const maxEffectiveDebtRatio = wadMin(debtRatio_, WAD);
+    const decayFactor = wadPowInt(MIN_FUM_BUY_PRICE_DECAY_PER_SECOND, currentTime - timeUnderwater);
+    const effectiveDebtRatio = maxEffectiveDebtRatio - wadMulUp(decayFactor, maxEffectiveDebtRatio - MAX_DEBT_RATIO);
+    const usmSupplyForFumBuys = wadMulDown(effectiveDebtRatio, wadMulDown(ethPool_, ethUsdPrice));
+    return { timeUnderwater, usmSupplyForFumBuys, debtRatio: debtRatio_ };
+  }
+
+  function checkForFreshOraclePrice(ls, oracleLatestPrice) {
+    let oraclePrice = oracleLatestPrice + HALF_TRILLION;   // Round for comparison (millionths precision)
+    oraclePrice = oraclePrice / TRILLION * TRILLION;       // Zero out the last 12 digits
+    let adjustment = ls.bidAskAdjustment;
+    let price;
+    if (oraclePrice === ls.oracleEthUsdPrice) {
+      price = ls.ethUsdPrice;                              // Oracle unchanged: keep stored mid price
+    } else {
+      price = oraclePrice;
+      if (ls.ethUsdPrice !== 0n) {
+        if (adjustment > WAD) {
+          adjustment = wadMax(WAD, wadMulDivUp(ls.ethUsdPrice, adjustment, price));
+        } else if (adjustment < WAD) {
+          adjustment = wadMin(WAD, wadMulDivDown(ls.ethUsdPrice, adjustment, price));
+        }
+      }
+    }
+    return { price, oraclePrice, adjustment };
+  }
+
+  // loadState(): storedState -> LoadedState, including bidAskAdjustment decay
+  function loadState(stored, ethPoolNow, usmSupply, blockTimestamp) {
+    const secsSinceStored = blockTimestamp - stored.bidAskAdjustmentTimestamp;
+    const decayFactor = (secsSinceStored >= BID_ASK_ADJUSTMENT_ZERO_OUT_PERIOD) ? 0n
+                        : wadPowInt(BID_ASK_ADJUSTMENT_DECAY_PER_SECOND, secsSinceStored);
+    // adjustment = WAD + storedAdjustment.wadMulDown(decayFactor) - decayFactor  (gravitates toward 1)
+    const bidAsk = WAD + wadMulDown(stored.bidAskAdjustment * TRILLION, decayFactor) - decayFactor;
+    return {
+      timeSystemWentUnderwater: stored.timeSystemWentUnderwater,
+      ethUsdPrice: stored.ethUsdPrice * TRILLION,          // millionths -> wad
+      oracleEthUsdPrice: stored.oracleEthUsdPrice * TRILLION,
+      bidAskAdjustmentTimestamp: blockTimestamp,
+      bidAskAdjustment: bidAsk,
+      ethPool: ethPoolNow,
+      usmTotalSupply: usmSupply,
+    };
+  }
+
+  // _storeState(): LoadedState -> StoredState (millionths rounding, exactly like the contract)
+  function storeState(ls) {
+    return {
+      timeSystemWentUnderwater: ls.timeSystemWentUnderwater & 0xFFFFFFFFn,
+      ethUsdPrice: (ls.ethUsdPrice + HALF_TRILLION) / TRILLION,
+      oracleEthUsdPrice: ls.oracleEthUsdPrice / TRILLION,
+      bidAskAdjustmentTimestamp: ls.bidAskAdjustmentTimestamp & 0xFFFFFFFFn,
+      bidAskAdjustment: (ls.bidAskAdjustment + HALF_TRILLION) / TRILLION,
+    };
+  }
+
+  // fumFromFund() (non-prefund branch)
+  function fumFromFund(ls, fumSupply, ethIn, debtRatio_, prefund) {
+    const adjustedEthUsdPrice0 = adjustedEthUsdPrice(SIDE_BUY, ls.ethUsdPrice, ls.bidAskAdjustment);
+    const fumBuyPrice0 = fumPrice(SIDE_BUY, adjustedEthUsdPrice0, ls.ethPool, ls.usmTotalSupply, fumSupply, prefund);
+    let adjGrowthFactor;
+    let fumOut;
+    if (prefund) {
+      adjGrowthFactor = WAD;
+      fumOut = wadDivDown(ethIn, fumBuyPrice0);
+    } else {
+      const effectiveDebtRatio0 = wadMin(debtRatio_, MAX_DEBT_RATIO);
+      const netFumDelta = wadDivUp(effectiveDebtRatio0, WAD - effectiveDebtRatio0);
+      const ethPool1 = ls.ethPool + ethIn;
+      adjGrowthFactor = wadPowUp(wadDivUp(ethPool1, ls.ethPool), netFumDelta / 2n);
+      const adjustedEthUsdPrice1 = wadMulUp(adjustedEthUsdPrice0, wadSquaredUp(adjGrowthFactor));
+      const fumBuyPrice1 = fumPrice(SIDE_BUY, adjustedEthUsdPrice1, ls.ethPool, ls.usmTotalSupply, fumSupply, prefund);
+      const avgFumBuyPrice = wadSqrtUp(wadMulUp(fumBuyPrice0, fumBuyPrice1));
+      fumOut = wadDivDown(ethIn, avgFumBuyPrice);
+    }
+    return { fumOut, adjGrowthFactor, fumBuyPrice0, adjustedEthUsdPrice0 };
+  }
+
+  // ethFromDefund()
+  function ethFromDefund(ls, fumSupply, fumIn) {
+    const adjustedEthUsdPrice0 = adjustedEthUsdPrice(SIDE_SELL, ls.ethUsdPrice, ls.bidAskAdjustment);
+    const fumSellPrice0 = fumPrice(SIDE_SELL, adjustedEthUsdPrice0, ls.ethPool, ls.usmTotalSupply, fumSupply, false);
+
+    const lowerBoundEthQty1 = ls.ethPool - wadMulUp(fumIn, fumSellPrice0);
+    const lowerBoundEthShrinkFactor1 = wadDivDown(lowerBoundEthQty1, ls.ethPool);
+    const adjustedEthUsdPrice1 = wadMulDown(adjustedEthUsdPrice0, wadPowDown(lowerBoundEthShrinkFactor1, FOUR_WAD));
+    const debtRatio1 = debtRatio(adjustedEthUsdPrice1, lowerBoundEthQty1, ls.usmTotalSupply);
+    const debtRatio2 = wadMin(debtRatio1, MAX_DEBT_RATIO);
+    const netFumDelta2 = wadDivUp(WAD, WAD - debtRatio2) - WAD;
+    const adjShrinkFactor = wadPowDown(lowerBoundEthShrinkFactor1, netFumDelta2 / 2n);
+
+    const adjustedEthUsdPrice2 = wadMulDown(adjustedEthUsdPrice0, wadSquaredDown(adjShrinkFactor));
+    const fumSellPrice2 = fumPrice(SIDE_SELL, adjustedEthUsdPrice2, ls.ethPool, ls.usmTotalSupply, fumSupply, false);
+    const avgFumSellPrice = (fumSellPrice0 + fumSellPrice2) / 2n;
+    const ethOut = wadMulDown(fumIn, avgFumSellPrice);
+
+    return { ethOut, adjShrinkFactor, fumSellPrice0, fumSellPrice2, avgFumSellPrice, adjustedEthUsdPrice0,
+             lowerBoundEthQty1, debtRatio1, debtRatio2, netFumDelta2 };
+  }
+
+  // ---------- helpers ----------
+  function toNum(x, decimals = 18n) {
+    const scale = 10n ** decimals;
+    const sign = x < 0n ? -1 : 1;
+    x = x < 0n ? -x : x;
+    const int = x / scale, frac = x % scale;
+    return sign * (Number(int) + Number(frac) / Number(scale));
+  }
+  // Format a BigInt with 18 decimals into a string with up to maxDec decimals
+  function fmt(x, decimals = 18, maxDec = 6) {
+    const scale = 10n ** BigInt(decimals);
+    const sign = x < 0n ? '-' : '';
+    x = x < 0n ? -x : x;
+    const int = x / scale, frac = x % scale;
+    let fs = frac.toString().padStart(decimals, '0').slice(0, maxDec);
+    fs = fs.replace(/0+$/, '');
+    return sign + int.toString() + (fs ? '.' + fs : '');
+  }
+  function fmtFull(x, decimals = 18) {
+    const scale = 10n ** BigInt(decimals);
+    const sign = x < 0n ? '-' : '';
+    x = x < 0n ? -x : x;
+    const int = x / scale, frac = x % scale;
+    return sign + int.toString() + '.' + frac.toString().padStart(decimals, '0');
+  }
+  function fmtPct(wad) {  // wad ratio -> percentage string
+    return (toNum(wad, 16n)).toFixed(4) + '%';
+  }
+
+  // ---------- simulation ----------
+  // Initial on-chain state at block 25,716,149 (the block BEFORE the attack, 25,716,150):
+  const INIT = {
+    ethPoolWei:     132588942983107019337n,     // 132.588942983107019337 ETH
+    usmSupplyWei:   200251453135834662058063n,  // 200,251.453135834662058063 USM
+    fumSupplyWei:   329463502710697641576863n,  // 329,463.502710697641576863 FUM
+    oracleLatest:   1921813593000000000000n,    // real-time median ETH/USD = $1921.813593 (wad) — recovered exactly from on-chain reproduction
+    ethInWei:       11579978354608392803524n,   // Morpho flash loan: 11,579.978354608392803524 ETH
+    lastActivityTs: 1777691195n,                // 2026-05-02 03:06:35 UTC (stored bidAskAdjustmentTimestamp, from chain)
+    blockTs:        1786263167n,                // attack block 25,716,150 timestamp: 2026-08-09T08:12:47Z (real, from Blockscout)
+  };
+  const INIT_STORED = {
+    timeSystemWentUnderwater: 0n,
+    ethUsdPrice: 2257793612n,                   // $2257.793612 (millionths) — stale mid
+    oracleEthUsdPrice: 2304031122n,             // $2304.031122 (millionths) — last accepted oracle reading
+    bidAskAdjustmentTimestamp: INIT.lastActivityTs,
+    bidAskAdjustment: 1000000n,                 // 1.0 (millionths); 81.8 days of decay -> gravitates to 1.0 anyway
+  };
+
+  // On-chain reference values (verification anchors only — NOT used in any calculation):
+  const ONCHAIN_PAYOUTS = [182043926127399815483n,
+    182043926127390099186n,
+    182043926127380382889n,
+    182043926127369694963n,
+    182043926127359978666n,
+    182043926127348319110n,
+    182043926127336659554n,
+    182043926127324028368n,
+    182043926127310425553n,
+    182043926127296822737n,
+    182043926127281276663n,
+    182043926127265730588n,
+    182043926127249212883n,
+    182043926127231723549n,
+    182043926127213262586n,
+    182043926127192858362n,
+    182043926127171482510n,
+    182043926127149135027n,
+    182043926127124844285n,
+    182043926127098610284n,
+    182043926127070433024n,
+    182043926127041284134n,
+    182043926127009220354n,
+    182043926126974241686n,
+    182043926126936348129n,
+    182043926126895539683n,
+    182043926126851816347n,
+    182043926126804206494n,
+    182043926126751738491n,
+    182043926126694412341n,
+    182043926126633199671n,
+    182043926126564213964n,
+    182043926126488426850n,
+    182043926126405838328n,
+    182043926126313533509n,
+    182043926126210540764n,
+    182043926126095888462n,
+    182043926125966661716n,
+    182043926125820917265n,
+    182043926125656711850n,
+    182043926125469187324n,
+    182043926125255428796n,
+    182043926125007663229n,
+    182043926124720060846n,
+    182043926124382905350n,
+    182043926123986480444n,
+    182043926123512325164n,
+    182043926122941978546n,
+    182043926122246291700n,
+    182043926121384456181n,
+    182043926120302060726n,
+    182043926118914573554n,
+    182043926117097626067n,
+    182043926114653005811n,
+    182043926111257160106n,
+    182043926106349458631n,
+    182043926098884427858n,
+    182043926086746829991n,
+    182043926065117381854n,
+    182043926021084096732n,
+    182043925910447540828n,
+    182043925504302451260n,
+    182043921942902709715n,
+    182041991342444874875n];
+  const TARGETS = {
+    fumOut: 62184299031602985197125048n,    // 62,184,299.031602985197125048 FUM (real minted, on-chain log)
+    sumEthOut: ONCHAIN_PAYOUTS.reduce((a, b) => a + b, 0n),               // 11,650.809331976090511896 ETH (sum of the 64 real payouts)
+    finalPool: 61757965615409310965n,                                     // 61.757965615409310965 ETH
+    netProfit: 70830977367697708372n,                                     // 70.830977367697708372 ETH
+    payouts: ONCHAIN_PAYOUTS,                                             // the 64 real defund payouts, in order
+  };
+
+  function snapshot(step, extra) {
+    return Object.assign({
+      step,
+      ethPool: 0n, usmSupply: 0n, fumSupply: 0n,
+      attackerEth: 0n, attackerFum: 0n,
+      midPrice: 0n, oraclePriceStored: 0n, bidAskAdj: 0n,
+      drSys: 0n, drRt: 0n, debtLine: 0n,
+      ethOut: 0n, fumIn: 0n, fumOut: 0n, avgFumSellPrice: 0n,
+      ethPoolBefore: 0n, adjustedEthUsdPrice0: 0n,
+      fumSellPrice0: 0n, fumSellPrice2: 0n, lowerBoundEthQty1: 0n,
+      debtRatio1: 0n, debtRatio2: 0n, netFumDelta2: 0n, adjShrinkFactor: 0n,
+      bufferRt: 0n, poolUsdRt: 0n, poolUsdSys: 0n,
+    }, extra);
+  }
+
+  function simulate(overrides) {
+    const INIT_ = Object.assign({}, INIT, overrides || {});
+    let stored = Object.assign({}, INIT_STORED);
+    let ethPool = INIT_.ethPoolWei;
+    let usmSupply = INIT_.usmSupplyWei;
+    let fumSupply = INIT_.fumSupplyWei;
+    let attackerEth = 0n;      // net ETH received (loan counted negative)
+    let attackerFum = 0n;
+    let oneShot = null;
+    const steps = [];
+    const rtPrice = INIT_.oracleLatest;   // realtime oracle price used for the "true" debt view
+    const inactivityDays = Number(INIT_.blockTs - INIT_.lastActivityTs) / 86400;
+
+    const push = (extra) => {
+      const drRt = debtRatio(rtPrice, ethPool, usmSupply);
+      const debtLine = wadDivUp(usmSupply, rtPrice);   // ETH needed to fully cover USM at realtime price
+      const s = snapshot(steps.length, {
+        ethPool, usmSupply, fumSupply, attackerEth, attackerFum,
+        drRt, debtLine,
+        bufferRt: ethPool - debtLine,
+        poolUsdRt: wadMulDown(ethPool, rtPrice),
+        poolUsdSys: wadMulDown(ethPool, stored.ethUsdPrice * TRILLION),
+        midPrice: stored.ethUsdPrice * TRILLION,
+        oraclePriceStored: stored.oracleEthUsdPrice * TRILLION,
+        bidAskAdj: (stored.bidAskAdjustmentTimestamp >= INIT_.blockTs ? stored.bidAskAdjustment * TRILLION : WAD),
+        drSys: debtRatio(stored.ethUsdPrice * TRILLION, ethPool, usmSupply),
+      });
+      Object.assign(s, extra);
+      steps.push(s);
+      return s;
+    };
+
+    // ---- step 0: init (block 25,716,149) ----
+    push({ name: 'init', desc: '攻击前一区块 25,716,149 — 系统已 ' + inactivityDays.toFixed(2) + ' 天无人交互（中间价与调整系数早已陈旧）' });
+
+    // ---- step 1: flash loan + fund(11,579.978354608392803524 ETH) ----
+    {
+      const ethIn = INIT_.ethInWei;
+      attackerEth -= ethIn;                       // borrow from Morpho
+      ethPool += ethIn;                           // msg.value already added to contract balance
+      const ls = loadState(stored, ethPool, usmSupply, INIT_.blockTs);
+      ls.ethPool -= ethIn;                        // back out the ETH just received
+      const f = checkForFreshOraclePrice(ls, INIT_.oracleLatest);
+      ls.ethUsdPrice = f.price; ls.oracleEthUsdPrice = f.oraclePrice; ls.bidAskAdjustment = f.adjustment;
+      const uw = checkIfUnderwater(ls.usmTotalSupply, ls.ethPool, ls.ethUsdPrice, ls.timeSystemWentUnderwater, INIT_.blockTs);
+      ls.timeSystemWentUnderwater = uw.timeUnderwater;
+      ls.usmTotalSupply = uw.usmSupplyForFumBuys;
+      const r = fumFromFund(ls, fumSupply, ethIn, uw.debtRatio, false);
+      ls.bidAskAdjustment = wadMulUp(ls.bidAskAdjustment, r.adjGrowthFactor);
+      ls.ethUsdPrice = wadMulUp(ls.ethUsdPrice, r.adjGrowthFactor);
+      stored = storeState(ls);
+      fumSupply += r.fumOut;
+      attackerFum += r.fumOut;
+      push({
+        name: 'fund', desc: '闪贷 11,579.98 ETH → fund()，' + inactivityDays.toFixed(2) + ' 天来首次刷新价格：中间价 $2257.79 → $1921.81',
+        fumOut: r.fumOut, ethOut: 0n, fumIn: 0n,
+        adjGrowthFactor: r.adjGrowthFactor, avgFumSellPrice: 0n,
+        fumBuyPrice0: r.fumBuyPrice0,
+        details: { ethIn, oracleWas: INIT_STORED.oracleEthUsdPrice * TRILLION, oracleNow: f.oraclePrice,
+                   netFumDelta: wadDivUp(wadMin(uw.debtRatio, MAX_DEBT_RATIO), WAD - wadMin(uw.debtRatio, MAX_DEBT_RATIO)),
+                   midBeforeRefresh: INIT_STORED.ethUsdPrice * TRILLION },
+      });
+    }
+
+    // Counterfactual: burn every newly minted FUM in a single defund() call from the exact post-fund state.
+    // This is isolated from the real 64-call path below and therefore cannot mutate the reproduced trace.
+    {
+      const ls = loadState(Object.assign({}, stored), ethPool, usmSupply, INIT_.blockTs);
+      const f = checkForFreshOraclePrice(ls, INIT_.oracleLatest);
+      ls.ethUsdPrice = f.price; ls.oracleEthUsdPrice = f.oraclePrice; ls.bidAskAdjustment = f.adjustment;
+      const r = ethFromDefund(ls, fumSupply, attackerFum);
+      ls.bidAskAdjustment = wadMulDown(ls.bidAskAdjustment, r.adjShrinkFactor);
+      ls.ethUsdPrice = wadMulDown(ls.ethUsdPrice, r.adjShrinkFactor);
+      const finalPool = ethPool - r.ethOut;
+      const finalDrSys = debtRatio(ls.ethUsdPrice, finalPool, ls.usmTotalSupply);
+      oneShot = {
+        fumIn: attackerFum,
+        ethOut: r.ethOut,
+        netProfit: r.ethOut - INIT_.ethInWei,
+        finalPool,
+        finalDrSys,
+        finalDrRt: debtRatio(rtPrice, finalPool, usmSupply),
+        wouldRevert: finalDrSys > MAX_DEBT_RATIO,
+        adjShrinkFactor: r.adjShrinkFactor,
+        avgFumSellPrice: r.avgFumSellPrice,
+        adjustedEthUsdPrice0: r.adjustedEthUsdPrice0,
+        fumSellPrice0: r.fumSellPrice0,
+        fumSellPrice2: r.fumSellPrice2,
+        lowerBoundEthQty1: r.lowerBoundEthQty1,
+        debtRatio1: r.debtRatio1,
+        debtRatio2: r.debtRatio2,
+        netFumDelta2: r.netFumDelta2,
+        ethPoolBefore: ethPool,
+        finalMidPrice: storeState(ls).ethUsdPrice * TRILLION,
+      };
+    }
+
+    // ---- steps 2..65: 64 x defund(chunk) ----
+    // The attacker burned 64 nearly-equal chunks: the first (64-rem) = floor(fumOut/64), the rest +1 wei.
+    // (On-chain logs: first 8 burns of 971,629.672368796643705078, then 56 burns of ...079.)
+    const base = attackerFum / 64n;              // computed live from the minted FUM
+    const rem = attackerFum - base * 64n;
+    let sumEthOut = 0n;
+    for (let k = 1; k <= 64; k++) {
+      const chunkK = base + (BigInt(k) > 64n - rem ? 1n : 0n);
+      const fumIn = (k === 64) ? attackerFum : chunkK;   // last call burns whatever is left
+      const ls = loadState(stored, ethPool, usmSupply, INIT_.blockTs);
+      const f = checkForFreshOraclePrice(ls, INIT_.oracleLatest);
+      ls.ethUsdPrice = f.price; ls.oracleEthUsdPrice = f.oraclePrice; ls.bidAskAdjustment = f.adjustment;
+      const r = ethFromDefund(ls, fumSupply, fumIn);
+      ls.bidAskAdjustment = wadMulDown(ls.bidAskAdjustment, r.adjShrinkFactor);
+      ls.ethUsdPrice = wadMulDown(ls.ethUsdPrice, r.adjShrinkFactor);
+      const newDebtRatio = debtRatio(ls.ethUsdPrice, ls.ethPool - r.ethOut, ls.usmTotalSupply);
+      if (newDebtRatio > MAX_DEBT_RATIO) throw new Error('defund ' + k + ' would revert: debt ratio > MAX');
+      fumSupply -= fumIn;
+      attackerFum -= fumIn;
+      stored = storeState(ls);
+      ethPool -= r.ethOut;
+      attackerEth += r.ethOut;
+      sumEthOut += r.ethOut;
+      push({
+        name: 'defund', desc: 'defund #' + k + '：赎回 ' + fmtFull(fumIn, 0) + ' FUM（等额拆分）',
+        ethOut: r.ethOut, fumIn, fumOut: 0n,
+        adjShrinkFactor: r.adjShrinkFactor, avgFumSellPrice: r.avgFumSellPrice,
+        fumSellPrice0: r.fumSellPrice0, fumSellPrice2: r.fumSellPrice2,
+        adjustedEthUsdPrice0: r.adjustedEthUsdPrice0,
+        ethPoolBefore: ls.ethPool, lowerBoundEthQty1: r.lowerBoundEthQty1,
+        debtRatio1: r.debtRatio1, debtRatio2: r.debtRatio2, netFumDelta2: r.netFumDelta2,
+        newDebtRatio, defundNo: k, sumEthOut,
+      });
+    }
+
+    // ---- final step: repay flash loan, net profit ----
+    push({ name: 'repay', desc: '归还闪贷 11,579.978354608392803524 ETH，净利 = 累计赎回 − 借款', ethOut: 0n });
+
+    return {
+      steps, INIT: INIT_, TARGETS, INIT_STORED, chunkBase: base, chunkRem: rem, oneShot,
+      sumEthOut, finalPool: ethPool, netProfit: attackerEth,
+      finalFumSupply: fumSupply, finalAttackerFum: attackerFum,
+      checks: {},
+    };
+  }
+
+  // Re-run to also capture the fund's fumOut for the check (simulate returns full steps; checks computed here)
+  function run(overrides) {
+    const sim = simulate(overrides);
+    const fundStep = sim.steps[1];
+    // per-step payout verification against the 64 real on-chain payouts:
+    let payoutMatches = 0, payoutDiffs = [];
+    for (let k = 1; k <= 64; k++) {
+      const d = sim.steps[k + 1];
+      const real = TARGETS.payouts[k - 1];
+      if (d.ethOut === real) payoutMatches++;
+      else payoutDiffs.push({ k, computed: d.ethOut, real, delta: d.ethOut - real });
+    }
+    const checks = {
+      fumOut: { computed: fundStep.fumOut, target: TARGETS.fumOut },
+      payouts64: { computed: payoutMatches, target: 64, diffs: payoutDiffs },
+      sumEthOut: { computed: sim.sumEthOut, target: TARGETS.sumEthOut },
+      finalPool: { computed: sim.finalPool, target: TARGETS.finalPool },
+      netProfit: { computed: sim.netProfit, target: TARGETS.netProfit },
+    };
+    for (const k of Object.keys(checks)) {
+      checks[k].match = checks[k].computed === checks[k].target;
+    }
+    sim.checks = checks;
+    return sim;
+  }
+
+  return {
+    WAD, MAX_DEBT_RATIO, TRILLION,
+    wadMulDown, wadMulUp, wadDivDown, wadDivUp, wadPowInt, wadPowDown, wadPowUp,
+    log_2, pow_2, debtRatio, fumPrice, ethFromDefund, fumFromFund,
+    checkForFreshOraclePrice, checkIfUnderwater,
+    simulate, run, fmt, fmtFull, fmtPct, toNum,
+    INIT, INIT_STORED, TARGETS,
+  };
+});
+
+// Self-test when run under Node:
+if (typeof require !== 'undefined' && typeof module !== 'undefined' && require.main === module) {
+  const E = require('./usm_engine.js');
+  const runOne = (oracleLatest, label) => {
+    const sim = E.run(oracleLatest !== undefined ? { oracleLatest } : undefined);
+    const st = sim.steps;
+    const f = st[1];
+    console.log((label || '') + 'oracle=' + E.fmt(sim.INIT.oracleLatest, 18, 6) +
+      '  fumOut=' + E.fmtFull(f.fumOut) + '  match=' + sim.checks.fumOut.match +
+      '  payouts=' + sim.checks.payouts64.computed + '/64  match=' + sim.checks.payouts64.match +
+      '  sumEthOut=' + E.fmtFull(sim.sumEthOut) + '  match=' + sim.checks.sumEthOut.match +
+      '  finalPool=' + E.fmtFull(sim.finalPool) + '  match=' + sim.checks.finalPool.match +
+      '  net=' + E.fmtFull(sim.netProfit) + '  match=' + sim.checks.netProfit.match +
+      '  midAfterFund=$' + E.fmt(f.midPrice, 18, 6));
+    if (sim.checks.payouts64.diffs && sim.checks.payouts64.diffs.length) {
+      console.log('  payout diffs (first 10):');
+      for (const d of sim.checks.payouts64.diffs.slice(0, 10)) {
+        console.log('    #' + d.k + ' computed=' + d.computed.toString() + ' real=' + d.real.toString() + ' delta=' + d.delta.toString());
+      }
+    }
+    return sim;
+  };
+  if (process.env.ORACLE) {
+    runOne(BigInt(process.env.ORACLE));
+  } else {
+    const sim = runOne();
+    const st = sim.steps;
+    const f = st[1];
+    console.log('mid price   = $' + E.fmt(f.midPrice, 18, 9) + ' adj =', E.fmt(f.bidAskAdj, 18, 9));
+    console.log('pool after  =', E.fmtFull(f.ethPool), 'ETH');
+    console.log('chunkBase   =', E.fmtFull(sim.chunkBase, 0), 'FUM  chunkRem =', sim.chunkRem.toString());
+    for (let k = 1; k <= 64; k++) {
+      if (k <= 3 || k >= 62) {
+        const d = st[k + 1];
+        console.log('defund #' + k + ': ethOut=' + E.fmtFull(d.ethOut) +
+          ' ETH  mid=$' + E.fmt(d.midPrice, 18, 9) + '  adj=' + E.fmt(d.bidAskAdj, 18, 9) +
+          '  drSys=' + E.fmtPct(d.drSys) + '  pool=' + E.fmt(d.ethPool, 18, 9));
+      }
+    }
+    console.log('=== final ===');
+    console.log('final drSys =', E.fmtPct(st[st.length - 1].drSys), ' final drRt =', E.fmtPct(st[st.length - 1].drRt));
+    console.log('initial drRt =', E.fmtPct(st[0].drRt), ' initial drSys =', E.fmtPct(st[0].drSys));
+    console.log('one-shot counterfactual: ethOut=' + E.fmtFull(sim.oneShot.ethOut) +
+      ' net=' + E.fmtFull(sim.oneShot.netProfit) + ' finalPool=' + E.fmtFull(sim.oneShot.finalPool) +
+      ' finalDrRt=' + E.fmtPct(sim.oneShot.finalDrRt) + ' revert=' + sim.oneShot.wouldRevert);
+    console.log('ALL MATCH:', Object.keys(sim.checks).every(k => sim.checks[k].match));
+  }
+}
+
+</script>
+<script>
+(function () {
+  'use strict';
+  const E = window.USMEngine;
+  const sim = E.run();
+  const steps = sim.steps;
+  const n = steps.length;              // 67
+
+  // ---------- number series for gauges / sparklines ----------
+  const num = (x, dec) => Number(x) / Math.pow(10, dec);
+  const series = {
+    mid: steps.map(s => num(s.midPrice, 18)),
+    adj: steps.map(s => num(s.bidAskAdj, 18)),
+    oracleStored: steps.map(s => num(s.oraclePriceStored, 18)),
+    drSys: steps.map(s => num(s.drSys, 16)),
+    drRt: steps.map(s => num(s.drRt, 16)),
+    fumSupply: steps.map(s => num(s.fumSupply, 18)),
+    attackerFum: steps.map(s => num(s.attackerFum, 18)),
+    ethPool: steps.map(s => num(s.ethPool, 18)),
+    debtLine: steps.map(s => num(s.debtLine, 18)),
+    attackerEth: steps.map(s => num(s.attackerEth, 18)),
+    avgSell: steps.map(s => num(s.avgFumSellPrice, 18)),
+    ethOut: steps.map(s => num(s.ethOut, 18)),
+  };
+  const range = (arr) => {
+    let mn = Infinity, mx = -Infinity;
+    for (const v of arr) { if (v < mn) mn = v; if (v > mx) mx = v; }
+    if (mx - mn < 1e-12) { mx = mn + 1; }
+    return [mn, mx];
+  };
+
+  const group = (s) => s.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+  const fmtEth = (v, d) => {
+    const neg = v < 0;
+    const a = Math.abs(v).toFixed(d === undefined ? 2 : d);
+    const dot = a.indexOf('.');
+    const int = dot === -1 ? a : a.slice(0, dot);
+    const frac = dot === -1 ? '' : a.slice(dot);
+    return (neg ? '-' : '') + group(int) + frac;
+  };
+  const fmtUsd = (v, d) => '$' + fmtEth(v, d);
+  const fmtSmall = (v) => {
+    if (v === 0) return '0';
+    if (v < 1e-4) return v.toExponential(4);
+    return v.toFixed(6);
+  };
+  const fmtPctN = (v, d) => v.toFixed(d === undefined ? 2 : d) + '%';
+
+  // ---------- gauge definitions ----------
+  const gauges = [
+    { key: 'mid', label: '系统中间价 ethUsdPrice', color: 'var(--blue)',
+      fmt: v => fmtUsd(v, 4), barMax: () => Math.max(...series.mid) * 1.02,
+      sub: s => '刷新前 $2257.793612 → fund 后推高至 $7,164,588' },
+    { key: 'oracleStored', label: '缓存预言机价 oracleEthUsdPrice', color: 'var(--purple)',
+      fmt: v => fmtUsd(v, 6), barMax: () => 2350,
+      sub: () => '实时三源中位数 = $1921.813593（恒定）' },
+    { key: 'adj', label: '买卖价差调整 bidAskAdjustment', color: 'var(--cyan)',
+      fmt: v => v.toFixed(6) + '×', barMax: () => Math.max(...series.adj) * 1.02,
+      sub: s => 'fund 时 ×3728.03，defund 逐步下压' },
+    { key: 'drSys', label: '债务比率 · 系统视角', color: 'var(--amber)',
+      fmt: v => fmtPctN(v, 4), barMax: () => 90,
+      sub: () => '条形按 MAX_DEBT_RATIO = 80% 封顶（defund 每次须通过 ≤80% 检查）', maxMark: 80 },
+    { key: 'drRt', label: '债务比率 · 实时价格视角', color: 'var(--red)',
+      fmt: v => fmtPctN(v, 4), barMax: () => Math.max(...series.drRt) * 1.02,
+      sub: () => '初始 78.5881575359607750%，终局 168.72%（穿仓）', maxMark: 100 },
+    { key: 'fumSupply', label: 'FUM 总供应量', color: 'var(--green)',
+      fmt: v => group(Math.round(v).toString()), barMax: () => Math.max(...series.fumSupply) * 1.02,
+      sub: () => 'fund 铸造 → defund 全部销毁复原' },
+    { key: 'attackerFum', label: '攻击者 FUM 余额', color: 'var(--cyan)',
+      fmt: v => group(Math.round(v).toString()), barMax: () => Math.max(...series.attackerFum) * 1.02,
+      sub: () => '峰值 ' + E.fmt(steps[1].fumOut, 18, 2) + ' FUM（fund 铸造，64 笔全部销毁）' },
+    { key: 'ethPool', label: '资金池 ETH', color: 'var(--blue)',
+      fmt: v => fmtEth(v, 4), barMax: () => Math.max(...series.ethPool) * 1.02,
+      sub: () => '132.59 → 11,712.57 → 61.76 ETH' },
+    { key: 'debtLine', label: 'USM 债务线（ETH）', color: 'var(--amber)',
+      fmt: v => fmtEth(v, 4), barMax: () => Math.max(...series.debtLine) * 1.02,
+      sub: () => '= USM 总量 ÷ $1921.813593，恒定 104.199… ETH' },
+    { key: 'attackerEth', label: '攻击者 ETH 净头寸', color: 'var(--red)',
+      fmt: v => (v >= 0 ? '+' : '') + fmtEth(v, 6), barMax: () => 100, barRange: () => [Math.min(...series.attackerEth) * 1.02, 120],
+      sub: () => '借入为负 → 64 次赎回回正 → 净赚 70.830977367697708372' },
+    { key: 'avgSell', label: 'FUM 卖出均价（ETH/FUM，本轮）', color: 'var(--purple)',
+      fmt: v => fmtSmall(v), barMax: () => Math.max(...series.avgSell) * 1.02,
+      sub: () => 'ethFromDefund 的算术平均价 (p0+p2)/2' },
+    { key: 'ethOut', label: '本轮 defund 赎回 ETH', color: 'var(--green)',
+      fmt: v => fmtEth(v, 9), barMax: () => Math.max(...series.ethOut) * 1.02,
+      sub: () => '64 笔每笔 ~182.04 ETH' },
+  ];
+
+  // ---------- DOM ----------
+  const $ = (id) => document.getElementById(id);
+  const badgesEl = $('badges');
+  const checks = sim.checks;
+  const badgeDefs = [
+    ['fumOut', 'FUM 铸造量 = 链上 ' + E.fmt(checks.fumOut.target, 18, 2) + ' FUM'],
+    ['payouts64', '64 笔 defund 赎回额逐笔一致 (' + checks.payouts64.computed + '/64)'],
+    ['sumEthOut', 'Σ赎回 = 11,650.809331976090511896 ETH'],
+    ['finalPool', '最终池子 = 61.757965615409310965 ETH'],
+    ['netProfit', '净利润 = 70.830977367697708372 ETH'],
+  ];
+  for (const [k, label] of badgeDefs) {
+    const b = document.createElement('div');
+    b.className = 'badge ' + (checks[k].match ? 'ok' : 'fail');
+    b.innerHTML = (checks[k].match ? '✓ ' : '✗ ') + '<b>' + label + '</b>';
+    badgesEl.appendChild(b);
+  }
+
+  // one-shot counterfactual vs the real 64-call path
+  const one = sim.oneShot;
+  const finalActual = steps[n - 1];
+  const extraFromSplitting = sim.sumEthOut - one.ethOut;
+  const oneShotShortfall = one.netProfit < 0n ? -one.netProfit : 0n;
+  const putWei = (id, value, decimals, signed) => {
+    const el = $(id);
+    el.textContent = (signed && value >= 0n ? '+' : '') + fmtEth(num(value, 18), decimals);
+    el.title = E.fmtFull(value) + ' ETH';
+  };
+  $('postFundPool').textContent = fmtEth(num(steps[1].ethPool, 18), 6) + ' ETH';
+  putWei('splitRedeem', sim.sumEthOut, 6, false);
+  putWei('splitNet', sim.netProfit, 6, true);
+  putWei('splitPool', sim.finalPool, 6, false);
+  $('splitDr').textContent = E.fmtPct(finalActual.drRt);
+  putWei('oneRedeem', one.ethOut, 6, false);
+  putWei('oneNet', one.netProfit, 6, true);
+  putWei('onePool', one.finalPool, 6, false);
+  $('oneDr').textContent = E.fmtPct(one.finalDrRt);
+  $('oneShotStatus').textContent = one.wouldRevert
+    ? '系统负债率 ' + E.fmtPct(one.finalDrSys) + ' > 80%，defund 会回滚'
+    : '系统负债率 ' + E.fmtPct(one.finalDrSys) + ' ≤ 80%，defund 通过；闪贷无法闭环';
+
+  const postFundPoolN = num(steps[1].ethPool, 18);
+  const splitRedeemPct = num(sim.sumEthOut, 18) / postFundPoolN * 100;
+  const oneRedeemPct = num(one.ethOut, 18) / postFundPoolN * 100;
+  $('splitRedeemBar').style.width = splitRedeemPct.toFixed(6) + '%';
+  $('splitPoolBar').style.width = (100 - splitRedeemPct).toFixed(6) + '%';
+  $('oneRedeemBar').style.width = oneRedeemPct.toFixed(6) + '%';
+  $('onePoolBar').style.width = (100 - oneRedeemPct).toFixed(6) + '%';
+  $('splitFlowBar').setAttribute('aria-label', '64 次拆分：赎回 ' + splitRedeemPct.toFixed(2) + '%，池中剩余 ' + (100 - splitRedeemPct).toFixed(2) + '%');
+  $('oneFlowBar').setAttribute('aria-label', '一次性全卖：赎回 ' + oneRedeemPct.toFixed(2) + '%，池中剩余 ' + (100 - oneRedeemPct).toFixed(2) + '%');
+
+  // Shared-coordinate trajectory: actual path has 64 sell intervals; one-shot is one vertical jump at 100%.
+  const comparePools = steps.slice(1, 66).map(s => num(s.ethPool, 18));
+  const chart = { W: 620, H: 250, l: 54, r: 26, t: 18, b: 34, min: 50, max: postFundPoolN * 1.08 };
+  chart.pw = chart.W - chart.l - chart.r; chart.ph = chart.H - chart.t - chart.b;
+  const chartX = i => chart.l + i / 64 * chart.pw;
+  const logMin = Math.log10(chart.min), logMax = Math.log10(chart.max);
+  const chartY = value => chart.t + (logMax - Math.log10(Math.max(chart.min, value))) / (logMax - logMin) * chart.ph;
+  const pathFor = end => comparePools.slice(0, end + 1).map((value, i) =>
+    (i === 0 ? 'M' : 'L') + chartX(i).toFixed(2) + ',' + chartY(value).toFixed(2)
+  ).join('');
+  const allActualPath = pathFor(64);
+  const oneShotPath = 'M' + chartX(0).toFixed(2) + ',' + chartY(postFundPoolN).toFixed(2) +
+    'L' + chartX(64).toFixed(2) + ',' + chartY(postFundPoolN).toFixed(2) +
+    'L' + chartX(64).toFixed(2) + ',' + chartY(num(one.finalPool, 18)).toFixed(2);
+  const xGrid = [0, 16, 32, 48, 64].map(i =>
+    '<line x1="' + chartX(i) + '" x2="' + chartX(i) + '" y1="' + chart.t + '" y2="' + (chart.H - chart.b) + '" stroke="#1c2735"/>' +
+    '<text x="' + chartX(i) + '" y="' + (chart.H - 12) + '" text-anchor="middle" fill="#657286" font-size="10">' + Math.round(i / 64 * 100) + '%</text>'
+  ).join('');
+  const yGrid = [100, 1000, 10000].map(value =>
+    '<line x1="' + chart.l + '" x2="' + (chart.W - chart.r) + '" y1="' + chartY(value) + '" y2="' + chartY(value) + '" stroke="#1c2735"/>' +
+    '<text x="' + (chart.l - 7) + '" y="' + (chartY(value) + 3) + '" text-anchor="end" fill="#657286" font-size="10">' + group(String(value)) + '</text>'
+  ).join('');
+  const intervalDots = comparePools.map((value, i) => i > 0 && (i % 8 === 0 || i === 64)
+    ? '<circle cx="' + chartX(i) + '" cy="' + chartY(value) + '" r="2" fill="#3fb950" opacity=".7"/>' : '').join('');
+  const debtY = chartY(num(steps[1].debtLine, 18));
+  $('compareChart').innerHTML =
+    '<title id="compareChartTitle">64 次拆分与一次性卖出的资金池余额轨迹</title>' +
+    '<desc id="compareChartDesc">绿色曲线逐步下降到 61.76 ETH；红色虚线在一次交易后下降到 5887.16 ETH；黄色线是 104.20 ETH 实时债务线。</desc>' +
+    xGrid + yGrid +
+    '<line x1="' + chart.l + '" x2="' + (chart.W - chart.r) + '" y1="' + debtY + '" y2="' + debtY + '" stroke="#d29922" stroke-width="1.4" stroke-dasharray="5 4"/>' +
+    '<text x="' + (chart.W - chart.r - 3) + '" y="' + (debtY - 5) + '" text-anchor="end" fill="#d29922" font-size="10">债务线 104.20</text>' +
+    '<path d="' + allActualPath + '" fill="none" stroke="#3fb950" stroke-width="2" opacity=".25"/>' +
+    '<path id="actualComparePast" d="" fill="none" stroke="#3fb950" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>' +
+    intervalDots +
+    '<path d="' + oneShotPath + '" fill="none" stroke="#f85149" stroke-width="2.2" stroke-dasharray="7 5"/>' +
+    '<circle cx="' + chartX(64) + '" cy="' + chartY(num(one.finalPool, 18)) + '" r="4" fill="#f85149"/>' +
+    '<text x="' + (chartX(64) - 6) + '" y="' + (chartY(num(one.finalPool, 18)) - 8) + '" text-anchor="end" fill="#f85149" font-size="10">1 次后 5,887.16</text>' +
+    '<text x="' + (chartX(64) - 6) + '" y="' + (chartY(comparePools[64]) + 17) + '" text-anchor="end" fill="#3fb950" font-size="10">64 次后 61.76</text>' +
+    '<circle id="actualComparePoint" cx="0" cy="0" r="5" fill="#fff" stroke="#3fb950" stroke-width="2" opacity="0"/>';
+
+  function updateComparisonChart(stepIndex) {
+    const sellIndex = stepIndex < 1 ? -1 : Math.min(64, stepIndex - 1);
+    const activePath = $('actualComparePast');
+    const point = $('actualComparePoint');
+    if (sellIndex < 0) {
+      activePath.setAttribute('d', '');
+      point.setAttribute('opacity', '0');
+      $('compareChartStatus').textContent = '当前：尚未执行 fund()；两条卖出路径均从 fund 后状态开始比较。';
+      return;
+    }
+    activePath.setAttribute('d', pathFor(sellIndex));
+    point.setAttribute('cx', chartX(sellIndex));
+    point.setAttribute('cy', chartY(comparePools[sellIndex]));
+    point.setAttribute('opacity', '1');
+    if (sellIndex === 0) {
+      $('compareChartStatus').textContent = '当前：fund() 已完成，实际路径尚未卖出；池余额 ' + fmtEth(comparePools[0], 6) + ' ETH。';
+    } else {
+      $('compareChartStatus').textContent = '当前实际路径：defund ' + sellIndex + ' / 64；池余额 ' + fmtEth(comparePools[sellIndex], 6) + ' ETH。一次性路径终点固定为 5,887.161662 ETH。';
+    }
+  }
+
+  const ratioN = (a, b) => Number(a) / Number(b);
+  const readablePctWad = wad => {
+    const pct = num(wad, 16);
+    return pct >= 10000 ? group(Math.round(pct).toString()) + '%' : pct.toFixed(4) + '%';
+  };
+  const factorPrice = wad => {
+    const value = num(wad, 18);
+    return value === 0 ? '0' : value.toExponential(8) + ' ETH/FUM';
+  };
+  const factorCell = (kind, value, sub, fraction) => {
+    const width = Math.max(0, Math.min(100, fraction * 100));
+    return '<div class="factorcell ' + kind + '"><div class="factorvalue">' + value + '</div>' +
+      '<div class="factorbar"><i style="width:' + width.toFixed(6) + '%"></i></div><div class="factorsub">' + sub + '</div></div>';
+  };
+  function updateFactorComparison(stepIndex) {
+    const actual = steps[stepIndex >= 2 ? Math.min(stepIndex, 65) : 2];
+    const preview = stepIndex < 2;
+    const inputRatio = ratioN(actual.fumIn, one.fumIn);
+    const actualLowerRatio = ratioN(actual.lowerBoundEthQty1, actual.ethPoolBefore);
+    const oneLowerRatio = ratioN(one.lowerBoundEthQty1, one.ethPoolBefore);
+    const actualP2Ratio = ratioN(actual.fumSellPrice2, actual.fumSellPrice0);
+    const oneP2Ratio = ratioN(one.fumSellPrice2, one.fumSellPrice0);
+    const actualAvgRatio = ratioN(actual.avgFumSellPrice, actual.fumSellPrice0);
+    const oneAvgRatio = ratioN(one.avgFumSellPrice, one.fumSellPrice0);
+    const actualMidRatio = ratioN(actual.midPrice, steps[1].midPrice);
+    const oneMidRatio = ratioN(one.finalMidPrice, steps[1].midPrice);
+    const maxOut = one.ethOut > actual.ethOut ? one.ethOut : actual.ethOut;
+    const maxDelta = one.netFumDelta2 > actual.netFumDelta2 ? one.netFumDelta2 : actual.netFumDelta2;
+    $('actualFactorHead').textContent = '实际 · defund #' + actual.defundNo + ' / 64' + (preview ? '（预览）' : '');
+
+    const rows = [
+      {
+        label: '① 输入规模', code: 'fumIn',
+        a: [fmtEth(num(actual.fumIn, 18), 3) + ' FUM', (inputRatio * 100).toFixed(4) + '% 的攻击者 FUM', inputRatio],
+        o: [fmtEth(num(one.fumIn, 18), 3) + ' FUM', '100% 一次烧完', 1],
+        note: '一次性输入约为单个分块的 64 倍；后续所有差异都从这里开始。',
+      },
+      {
+        label: '② 下界池余额', code: 'lowerBoundEthQty1',
+        a: [fmtEth(num(actual.lowerBoundEthQty1, 18), 6) + ' ETH', '保留池子的 ' + (actualLowerRatio * 100).toFixed(4) + '%', actualLowerRatio],
+        o: [fmtEth(num(one.lowerBoundEthQty1, 18), 6) + ' ETH', '仅保留池子的 ' + (oneLowerRatio * 100).toFixed(4) + '%', oneLowerRatio],
+        note: '先假设全部按起始卖价 p0 支付。一次性路径在这个保守估算里几乎把池子抽空。',
+      },
+      {
+        label: '③ 债务率封顶', code: 'debtRatio1 → debtRatio2',
+        a: [readablePctWad(actual.debtRatio2), '原始 ' + readablePctWad(actual.debtRatio1), ratioN(actual.debtRatio2, E.MAX_DEBT_RATIO)],
+        o: [readablePctWad(one.debtRatio2), '原始 ' + readablePctWad(one.debtRatio1) + '，被截到 80%', ratioN(one.debtRatio2, E.MAX_DEBT_RATIO)],
+        note: '一次性路径的原始债务率爆炸，触发 MAX_DEBT_RATIO 截断；这会把下一步指数推到最大区间。',
+      },
+      {
+        label: '④ 净 FUM 增量', code: 'netFumDelta2',
+        a: [E.fmt(actual.netFumDelta2, 18, 9) + '×', '收缩指数的输入', ratioN(actual.netFumDelta2, maxDelta)],
+        o: [E.fmt(one.netFumDelta2, 18, 9) + '×', '80% / (1 − 80%) = 4×', ratioN(one.netFumDelta2, maxDelta)],
+        note: '该值进入幂指数 netFumDelta2 / 2；实际小分块接近 0，一次性路径等于 4。',
+      },
+      {
+        label: '⑤ 收缩因子', code: 'adjShrinkFactor',
+        a: [E.fmt(actual.adjShrinkFactor, 18, 12) + '×', '保留 ' + (ratioN(actual.adjShrinkFactor, E.WAD) * 100).toFixed(8) + '%', ratioN(actual.adjShrinkFactor, E.WAD)],
+        o: [E.fmt(one.adjShrinkFactor, 18, 12) + '×', '只保留 ' + (ratioN(one.adjShrinkFactor, E.WAD) * 100).toFixed(8) + '%', ratioN(one.adjShrinkFactor, E.WAD)],
+        note: '这是关键分叉：实际单笔几乎不压价；一次性调用把内部中间价和卖出端点急剧压低。',
+      },
+      {
+        label: '⑥ 调整后中间价', code: 'ethUsdPrice × shrink',
+        a: [fmtUsd(num(actual.midPrice, 18), 2), 'fund 后价格的 ' + (actualMidRatio * 100).toFixed(6) + '%', actualMidRatio],
+        o: [fmtUsd(num(one.finalMidPrice, 18), 2), 'fund 后价格的 ' + (oneMidRatio * 100).toFixed(6) + '%', oneMidRatio],
+        note: '一次性路径将约 $716 万的内部价格一次压到约 $199；分块则每次只做局部修正。',
+      },
+      {
+        label: '⑦ 终点卖价', code: 'fumSellPrice2 = p2',
+        a: [factorPrice(actual.fumSellPrice2), 'p2 / p0 = ' + (actualP2Ratio * 100).toFixed(8) + '%', actualP2Ratio],
+        o: [factorPrice(one.fumSellPrice2), '整数运算后 p2 / p0 = 0%', oneP2Ratio],
+        note: '一次性调用的 p2 被压到 0；实际小分块的 p2 在多数轮次几乎等于 p0。',
+      },
+      {
+        label: '⑧ 算术平均卖价', code: '(p0 + p2) / 2',
+        a: [factorPrice(actual.avgFumSellPrice), '均价为 p0 的 ' + (actualAvgRatio * 100).toFixed(8) + '%', actualAvgRatio],
+        o: [factorPrice(one.avgFumSellPrice), 'p2 = 0，因此恰近 p0 的 50%', oneAvgRatio],
+        note: 'ethFromDefund 最终使用算术平均。一次性路径因此只能按约半价卖出整笔 FUM。',
+      },
+      {
+        label: '⑨ 本次 ETH 输出', code: 'fumIn × avgFumSellPrice',
+        a: [fmtEth(num(actual.ethOut, 18), 9) + ' ETH', '本笔；累计 ' + fmtEth(num(actual.sumEthOut, 18), 6) + ' ETH', ratioN(actual.ethOut, maxOut)],
+        o: [fmtEth(num(one.ethOut, 18), 9) + ' ETH', '唯一一笔，也是总输出', ratioN(one.ethOut, maxOut)],
+        note: '64 次路径会在每个局部区间重新计算接近 p0 的均价；一次性路径只计算一次被砍半的全区间均价。',
+      },
+    ];
+    $('factorRows').innerHTML = rows.map(row => '<div class="factorrow"><div class="factorname"><b>' + row.label + '</b><code>' + row.code + '</code></div>' +
+      factorCell('actual', row.a[0], row.a[1], row.a[2]) + factorCell('oneshot', row.o[0], row.o[1], row.o[2]) +
+      '<div class="factornote">' + row.note + '</div></div>').join('');
+    $('factorInsight').innerHTML = '当前实际第 <b>' + actual.defundNo + '</b> 笔：下界仍保留池子的 <b style="color:var(--green)">' +
+      (actualLowerRatio * 100).toFixed(4) + '%</b>，p2 保留 p0 的 <b style="color:var(--green)">' + (actualP2Ratio * 100).toFixed(6) + '%</b>。' +
+      '一次性路径下界只剩 <b style="color:var(--red)">' + (oneLowerRatio * 100).toFixed(4) + '%</b>，p2 被压到 <b style="color:var(--red)">0</b>，' +
+      '所以算术平均价只剩 p0 的 <b style="color:var(--amber)">' + (oneAvgRatio * 100).toFixed(2) + '%</b>。';
+  }
+  $('compareVerdict').innerHTML =
+    '一次性卖出只能赎回 <b>' + E.fmt(one.ethOut, 18, 6) + ' ETH</b>，比 64 次拆分少拿 <b style="color:var(--amber)">' +
+    E.fmt(extraFromSplitting, 18, 6) + ' ETH</b>。偿还 11,579.978354608392803524 ETH 闪贷后将亏损 <b style="color:var(--red)">' +
+    E.fmt(oneShotShortfall, 18, 6) + ' ETH</b>；若没有等额外部资金，闪贷回调无法完成。64 次拆分则盈利 <b style="color:var(--green)">' +
+    E.fmt(sim.netProfit, 18, 6) + ' ETH</b>。';
+
+  // gap days
+  $('gapDays').textContent = (Number(sim.INIT.blockTs - sim.INIT.lastActivityTs) / 86400).toFixed(2) + ' 天';
+
+  // gauge DOM
+  const gaugesEl = $('gauges');
+  const gaugeEls = gauges.map(g => {
+    const div = document.createElement('div');
+    div.className = 'gauge';
+    div.innerHTML = '<div class="gk"><span>' + g.label + '</span><span class="mono">' + (g.maxMark !== undefined ? '上限 ' + g.maxMark + '%' : '') + '</span></div>' +
+      '<div class="gv mono" style="color:' + g.color + '">—</div>' +
+      '<div class="gbar"><i style="background:' + g.color + '"></i></div>' +
+      '<svg class="spark" viewBox="0 0 220 30" preserveAspectRatio="none"></svg>' +
+      '<div class="gsub"></div>';
+    gaugesEl.appendChild(div);
+    return {
+      def: g,
+      vEl: div.querySelector('.gv'),
+      barEl: div.querySelector('.gbar i'),
+      svg: div.querySelector('svg'),
+      subEl: div.querySelector('.gsub'),
+      series: series[g.key],
+      rng: range(series[g.key]),
+      barMax: g.barMax(),
+      barRange: g.barRange ? g.barRange() : null,
+    };
+  });
+  function renderSpark(g, upto) {
+    const s = g.series, rng = g.rng;
+    const W = 220, H = 30;
+    const px = (i) => (i / (n - 1)) * W;
+    const py = (v) => H - 3 - ((v - rng[0]) / (rng[1] - rng[0])) * (H - 6);
+    // past path (up to current) + future path (dim)
+    let dPast = '', dFuture = '';
+    const point = (command, i) => command + px(i).toFixed(1) + ',' + py(s[i]).toFixed(1);
+    for (let i = 0; i <= upto; i++) {
+      dPast += point(i === 0 ? 'M' : 'L', i);
+    }
+    if (upto < n - 1) {
+      dFuture = point('M', upto);
+      for (let i = upto + 1; i < n; i++) dFuture += point('L', i);
+    }
+    const col = g.def.color;
+    g.svg.innerHTML =
+      (dFuture ? '<path d="' + dFuture + '" fill="none" stroke="#2a3648" stroke-width="1"/>' : '') +
+      (dPast ? '<path d="' + dPast + '" fill="none" stroke="' + col + '" stroke-width="1.4"/>' : '') +
+      '<circle cx="' + px(upto).toFixed(1) + '" cy="' + py(s[upto]).toFixed(1) + '" r="3" fill="#fff" stroke="' + col + '"/>';
+  }
+
+  // ---------- events table ----------
+  const tbl = $('events');
+  const tblWrap = tbl.closest('.tblwrap');
+  const thead = document.createElement('thead');
+  thead.innerHTML = '<tr><th>#</th><th>操作</th><th>输入</th><th>输出</th><th>系统中间价</th><th>调整系数</th><th>负债率(系统)</th><th>池子 ETH</th></tr>';
+  tbl.appendChild(thead);
+  const tbody = document.createElement('tbody');
+  tbl.appendChild(tbody);
+  const rowEls = [];
+  steps.forEach((s, i) => {
+    const tr = document.createElement('tr');
+    const tag = s.name === 'fund' ? '<span class="tag fund">fund</span>'
+      : s.name === 'defund' ? '<span class="tag defund">defund #' + s.defundNo + '</span>'
+      : s.name === 'init' ? '<span class="tag init">init</span>'
+      : '<span class="tag repay">还款</span>';
+    const inp = s.name === 'fund' ? fmtEth(num(sim.INIT.ethInWei, 18), 4) + ' ETH'
+      : s.name === 'defund' ? E.fmt(s.fumIn, 18, 2) + ' FUM' : '—';
+    const out = s.name === 'fund' ? E.fmt(s.fumOut, 18, 2) + ' FUM'
+      : s.name === 'defund' ? fmtEth(num(s.ethOut, 18), 9) + ' ETH' : '—';
+    tr.innerHTML = '<td>' + i + '</td><td>' + tag + '</td><td class="mono">' + inp + '</td><td class="mono">' + out +
+      '</td><td class="mono">' + fmtUsd(num(s.midPrice, 18), 2) + '</td><td class="mono">' + num(s.bidAskAdj, 18).toFixed(4) + '</td>' +
+      '<td class="mono">' + fmtPctN(num(s.drSys, 16), 2) + '</td><td class="mono">' + fmtEth(num(s.ethPool, 18), 4) + '</td>';
+    tr.addEventListener('click', () => goto(i));
+    tbody.appendChild(tr);
+    rowEls.push(tr);
+  });
+
+  // ---------- playback ----------
+  let cur = 0, playing = false, timer = null;
+  const disp = { pool: num(steps[0].ethPool, 18), debtLine: num(steps[0].debtLine, 18), vals: gauges.map(g => series[g.key][0]) };
+
+  function scrollRowIntoTable(row) {
+    if (!row || !tblWrap) return;
+    const rowTop = row.offsetTop;
+    const rowBottom = rowTop + row.offsetHeight;
+    if (rowTop < tblWrap.scrollTop) tblWrap.scrollTop = rowTop;
+    else if (rowBottom > tblWrap.scrollTop + tblWrap.clientHeight) {
+      tblWrap.scrollTop = rowBottom - tblWrap.clientHeight;
+    }
+  }
+  function goto(i, options) {
+    const shouldScroll = !options || options.scroll !== false;
+    cur = Math.max(0, Math.min(n - 1, i));
+    $('scrub').value = cur;
+    $('stepinfo').textContent = '步骤 ' + cur + ' / ' + (n - 1);
+    const s = steps[cur];
+    $('stepdesc').innerHTML = '<b>[' + s.name + ']</b> ' + s.desc +
+      (s.name === 'defund' ? ' · 本轮赎回 <b>' + fmtEth(num(s.ethOut, 18), 12) + ' ETH</b> · 链上实际 ' + fmtEth(num(sim.TARGETS.payouts[s.defundNo - 1], 18), 12) + ' ETH ✓' : '');
+    rowEls.forEach((r, i) => r.classList.toggle('cur', i === cur));
+    updateComparisonChart(cur);
+    updateFactorComparison(cur);
+    const tgt = rowEls[cur];
+    if (shouldScroll) scrollRowIntoTable(tgt);
+  }
+  function play() { playing = true; $('btnPlay').textContent = '⏸ 暂停'; schedule(); }
+  function pause() { playing = false; if (timer) clearTimeout(timer); timer = null; $('btnPlay').textContent = '▶ 播放'; }
+  function schedule() {
+    if (!playing) return;
+    timer = setTimeout(() => {
+      if (cur >= n - 1) { pause(); return; }
+      goto(cur + 1); schedule();
+    }, Number($('speed').value));
+  }
+  $('btnPlay').addEventListener('click', () => playing ? pause() : play());
+  $('btnPrev').addEventListener('click', () => { pause(); goto(cur - 1); });
+  $('btnNext').addEventListener('click', () => { pause(); goto(cur + 1); });
+  $('btnStart').addEventListener('click', () => { pause(); goto(0); });
+  $('btnEnd').addEventListener('click', () => { pause(); goto(n - 1); });
+  $('scrub').addEventListener('input', () => { pause(); goto(Number($('scrub').value)); });
+  document.addEventListener('keydown', (e) => {
+    if (e.code === 'ArrowRight') { pause(); goto(cur + 1); }
+    else if (e.code === 'ArrowLeft') { pause(); goto(cur - 1); }
+    else if (e.code === 'Space') { e.preventDefault(); playing ? pause() : play(); }
+  });
+
+  // ---------- render loop (tween) ----------
+  const targetVals = () => {
+    const s = steps[cur];
+    return {
+      pool: num(s.ethPool, 18), debtLine: num(s.debtLine, 18),
+      vals: gauges.map(g => series[g.key][cur]),
+    };
+  };
+  function render() {
+    const s = steps[cur];
+    const p = disp.pool, dl = disp.debtLine;
+
+    // left bar
+    const scale = Math.max(p, dl) * 1.18;
+    const H = 400, W = 420, x0 = 30, x1 = 390;
+    const py = (v) => H - (v / scale) * H;
+    const poolY = py(p), dlY = py(Math.min(dl, scale));
+    const usmTop = Math.min(p, dl);
+    $('barUsm').setAttribute('y', py(usmTop)); $('barUsm').setAttribute('height', Math.max(0, H - py(usmTop)));
+    $('barFum').setAttribute('y', py(p)); $('barFum').setAttribute('height', Math.max(0, py(usmTop) - poolY));
+    $('barDeficit').setAttribute('y', dlY); $('barDeficit').setAttribute('height', Math.max(0, poolY - dlY));
+    $('debtLine').setAttribute('y1', dlY); $('debtLine').setAttribute('y2', dlY);
+    $('debtLineLbl').setAttribute('y', dlY + 4); $('debtLineLbl').textContent = '债务线 ' + fmtEth(dl, 4) + ' ETH';
+    $('poolV').textContent = fmtEth(p, 4);
+    const drRtNow = disp.vals[4];
+    $('drRtV').textContent = fmtPctN(drRtNow, 4);
+    $('drRtV').className = 'v ' + (drRtNow > 100 ? 'red' : 'amber');
+    const net = disp.vals[9];
+    $('netV').textContent = (net >= 0 ? '+' : '') + fmtEth(net, 6);
+    $('netV').className = 'v ' + (net >= 0 ? 'green' : 'red');
+    $('usmPartV').textContent = fmtEth(Math.min(p, dl), 4);
+    $('fumPartV').textContent = fmtEth(Math.max(p - dl, 0), 4);
+    $('deficitV').textContent = fmtEth(Math.max(dl - p, 0), 4);
+
+    // gauges
+    gaugeEls.forEach((g, gi) => {
+      const v = disp.vals[gi];
+      g.vEl.textContent = g.def.fmt(v);
+      const rr = g.barRange || [0, (g.def.maxMark !== undefined ? g.def.maxMark : g.barMax)];
+      const frac = Math.max(0, Math.min(1, (v - rr[0]) / (rr[1] - rr[0])));
+      g.barEl.style.width = (frac * 100).toFixed(1) + '%';
+      g.subEl.textContent = g.def.sub(s);
+      renderSpark(g, cur);
+    });
+  }
+  let lastT = 0;
+  function frame(t) {
+    if (!lastT) lastT = t;
+    const dt = Math.min(0.1, (t - lastT) / 1000); lastT = t;
+    const tgt = targetVals();
+    const k = 1 - Math.exp(-dt * 9);
+    disp.pool += (tgt.pool - disp.pool) * k;
+    disp.debtLine += (tgt.debtLine - disp.debtLine) * k;
+    disp.vals = disp.vals.map((v, i) => v + (tgt.vals[i] - v) * k);
+    render();
+    requestAnimationFrame(frame);
+  }
+  window.USMViz = Object.freeze({
+    goto,
+    snap() {
+      const tgt = targetVals();
+      disp.pool = tgt.pool;
+      disp.debtLine = tgt.debtLine;
+      disp.vals = tgt.vals.slice();
+      render();
+    },
+    getCurrentStep: () => cur,
+  });
+  goto(0, { scroll: false });
+  requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>
