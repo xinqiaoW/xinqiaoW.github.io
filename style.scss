@@ -17,52 +17,58 @@
 
 html {
   font-size: $base-font-size;
+  scroll-behavior: smooth;
 }
 
 body {
   font-family: $base-font;
   color: $base-color;
-  line-height: 1.7em;
+  line-height: 1.8em;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 .container {
   margin: 0 auto;
   max-width: 1000px;
-  padding: 0 20px;
+  padding: 0 28px;
   width: 100%;
 }
 
 h1, h2, h3, h4, h5, h6 {
-  line-height: 2em;
-  margin: 1em 0 16px;
+  font-family: $heading-font;
+  line-height: 1.8em;
+  margin: 1.2em 0 0.6em;
   padding: 0;
+  color: $base-color;
 
   @include mobile {
-    line-height: 1.6em;
+    line-height: 1.5em;
   }
 }
 
 h1, h2, h3, h5 {
-  font-weight: bold;
+  font-weight: 700;
 }
 
 h1 {
-  font-size: 30px;
+  font-size: 28px;
+  letter-spacing: -0.3px;
   a {
     color: inherit;
   }
 }
 
 h2 {
-  font-size: 24px;
+  font-size: 23px;
 }
 
 h3 {
-  font-size: 20px;
+  font-size: 19px;
 }
 
 h4 {
-  font-size: 20px;
+  font-size: 18px;
   color: $base-lighten-color;
 }
 
@@ -73,17 +79,14 @@ h6 {
 p {
   color: $text-color;
   margin: 1em 0;
+  line-height: 1.9;
 }
 
 a {
   color: $link-color;
   text-decoration: none;
   cursor: pointer;
-  -webkit-transition: all 0.5s;
-  -moz-transition: all 0.5s;
-  -ms-transition: all 0.5s;
-  -o-transition: all 0.5s;
-  transition: all 0.5s;
+  transition: all 0.3s ease;
 
   &:hover, &:active {
     color: $link-lighten-color;
@@ -95,7 +98,7 @@ em, i {
 }
 
 strong, b {
-  font-weight: bold;
+  font-weight: 600;
 }
 
 sub {
@@ -111,7 +114,7 @@ sup {
 hr {
   border: 0;
   border-top: 1px solid $divider-color;
-  margin: 1.5em auto;
+  margin: 2em auto;
 }
 
 // Yeun's list style
@@ -206,11 +209,22 @@ table {
   width: 100%;
   border: 1px solid $table-border-color;
   border-collapse: collapse;
+  border-radius: 6px;
+  overflow: hidden;
 }
 
 td, th {
-  padding: .25rem .5rem;
+  padding: .5rem .75rem;
   border: 1px solid $table-border-color;
+}
+
+th {
+  background-color: #f0f3f8;
+  font-weight: 600;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  color: $base-lighten-color;
 }
 
 tbody tr:nth-child(odd) td,
@@ -218,15 +232,26 @@ tbody tr:nth-child(odd) th {
   background-color: $table-background-color;
 }
 
+tbody tr {
+  transition: background-color 0.2s ease;
+  &:hover td {
+    background-color: #edf0f7;
+  }
+}
+
 // Blockquote
 blockquote {
   font-weight: 300;
-  padding: 0 0 0 1.4rem;
-  margin: 0 2rem 1rem 0;
-  border-left: .2em solid $blockquote-border-color;
+  padding: 1em 1.4rem;
+  margin: 1.5em 0;
+  border-left: 4px solid $blockquote-border-color;
+  background: linear-gradient(135deg, #f8f9ff 0%, #f3f5fb 100%);
+  border-radius: 0 8px 8px 0;
 
   p {
     color: $blockquote-color;
+    font-style: italic;
+    margin: 0.3em 0;
   }
 
   p:last-child {
@@ -247,7 +272,7 @@ a.footnote {
     border: 1px solid $footnote-link-border-color;
     border-radius: 2px;
     -webkit-text-stroke: 0.25px;
-    -webkit-transition: 0.2s ease-out all;
+    transition: 0.2s ease-out all;
     text-decoration: none;
 
     &:hover {
@@ -266,7 +291,7 @@ img {
   display: block;
   max-width: 100%;
   margin: 0 0 1em;
-  border-radius: 5px;
+  border-radius: 8px;
 }
 
 // Fixes images in popup boxes from Google Translate
@@ -276,11 +301,9 @@ img {
 
 // Specify the color of the selection
 ::-moz-selection {
-//  color: $selection-color;
   background: $selection-background-color;
 }
 ::selection {
-//  color: $selection-color;
   background: $selection-background-color;
 }
 
@@ -329,6 +352,7 @@ img {
 	position: fixed;
 	z-index: 4;
   border-right: 1px solid $divider-color;
+  box-shadow: $sidebar-shadow;
 
   @include mobile {
     width: 100%;
@@ -337,6 +361,7 @@ img {
     position: relative;
     border-bottom: 1px solid $divider-color;
     border-right: 0;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.04);
   }
 }
 
@@ -361,8 +386,8 @@ img {
   .site-avatar {
     margin:0 auto;
     display: block;
-    max-width: 200px;
-    max-height: 200px;
+    max-width: 160px;
+    max-height: 160px;
 
     @include mobile {
       max-width: 120px;
@@ -371,7 +396,15 @@ img {
 
     img {
       display: inline-block;
-      border-radius: 2px;
+      border-radius: 50%;
+      border: 4px solid #fff;
+      box-shadow: 0 4px 15px rgba(91, 106, 191, 0.2);
+      transition: transform 0.4s ease, box-shadow 0.4s ease;
+
+      &:hover {
+        transform: scale(1.05);
+        box-shadow: 0 6px 25px rgba(91, 106, 191, 0.3);
+      }
     }
   }
 }
@@ -380,16 +413,17 @@ img {
   margin: 0 auto;
   color: $base-color;
   cursor: pointer;
-  font-family: $base-font;
+  font-family: $heading-font;
   font-weight: 700;
-  font-size: 28px;
-  letter-spacing: 1px;
+  font-size: 26px;
+  letter-spacing: 0.5px;
 }
 
 .site-description {
-  margin: 15px auto;
+  margin: 12px auto;
   color: $base-lighten-color;
-  font-size: 16px;
+  font-size: 15px;
+  line-height: 1.6;
 
   @include mobile {
     margin: 10px auto;
@@ -402,21 +436,40 @@ img {
 
 nav {
   display: block;
-  margin-top: 23px; // @TODO: Vertically middle align
+  margin-top: 23px;
   font-family: $base-font;
   font-weight: 500;
-  font-size: 18px;
+  font-size: 16px;
 
   @include mobile {
     margin-top: 9px;
-    font-size: 16px;
+    font-size: 15px;
   }
 
   a {
     margin: 0 10px;
     text-align: right;
-    font-weight: 300;
-    letter-spacing: 1px;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    position: relative;
+    padding-bottom: 3px;
+
+    &::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      width: 0;
+      height: 2px;
+      background: $link-color;
+      transition: all 0.3s ease;
+      transform: translateX(-50%);
+      border-radius: 1px;
+    }
+
+    &:hover::after {
+      width: 100%;
+    }
 
     @include mobile {
       margin: 0 10px;
@@ -456,14 +509,17 @@ nav {
 
       > a {
         margin: 3px 3px 3px 0;
-        padding: .5px 4px;
-        color: $base-color;
+        padding: 2px 8px;
+        color: $link-color;
         background-color: $tag-index-label-background-color;
-        border-radius: 3px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 500;
+        transition: all 0.25s ease;
 
         &:hover {
-          color: $link-color;
-          background-color:$link-bghv-color;
+          color: #fff;
+          background-color: $link-color;
         }
       }
     }
@@ -471,8 +527,21 @@ nav {
 }
 
 .posts > .post {
-  padding-bottom: 2em;
+  padding: 1.8em 0;
   border-bottom: 1px solid $divider-color;
+  transition: transform 0.2s ease;
+
+  h1 a {
+    background-image: linear-gradient(transparent 92%, rgba(91, 106, 191, 0.3) 0);
+    background-size: 0 100%;
+    background-repeat: no-repeat;
+    transition: background-size 0.4s ease;
+
+    &:hover {
+      background-size: 100% 100%;
+      color: $base-color;
+    }
+  }
 }
 
 .posts > .post:last-child {
@@ -481,10 +550,11 @@ nav {
 }
 
 .date {
-  font-weight: 300;
-  font-size: $small-font-size;
+  font-weight: 400;
+  font-size: 13px;
   color: $base-lighten-color;
   margin-right: 4px;
+  letter-spacing: 0.3px;
 }
 
 
@@ -500,15 +570,34 @@ nav {
   }
 
   .read-more {
-    font-size: 15px;
+    font-size: 14px;
+    font-weight: 500;
+    color: $link-color;
+    display: inline-block;
+    padding: 4px 0;
+    position: relative;
+
+    &::after {
+      content: ' \2192';
+      transition: margin-left 0.3s ease;
+      margin-left: 0;
+    }
+
+    &:hover::after {
+      margin-left: 6px;
+    }
+  }
+
+  .entry {
+    p {
+      color: $text-color;
+      line-height: 1.9;
+    }
   }
 }
 
 .page {
-//  margin: 40px;
-
   @include mobile {
-//    margin: 24px;
   }
 }
 
@@ -523,19 +612,31 @@ nav {
   position: fixed;
   z-index: 4;
   padding: 60px 20px 0 20px;
-  
+
   &:before{
     content:"目录";
     margin: 0 0 1em 1em;
     font-weight: 700;
-    font-size: 1.2em;
+    font-size: 1.1em;
     display: block;
     padding-bottom: 0.6em;
-    border-bottom: 3px double $divider-color;
+    border-bottom: 2px solid $divider-color;
+    color: $base-color;
+    font-family: $heading-font;
   }
 
   li:before{
     content:"";
+  }
+
+  li a {
+    font-size: 13px;
+    color: $base-lighten-color;
+    line-height: 1.7;
+
+    &:hover {
+      color: $link-color;
+    }
   }
 
   @include mobile{
@@ -568,12 +669,16 @@ nav {
       color: $base-lighten-color;
       border: 1px solid $divider-color;
       padding: 10px 20px;
-      background: $background-color;
+      background: $background-lighten-color;
+      border-radius: 6px;
+      font-weight: 500;
+      transition: all 0.3s ease;
 
       &:hover, &:focus {
-        color: $link-lighten-color;
-        border: 1px solid $link-lighten-color;
+        color: $link-color;
+        border-color: $link-color;
         background-color: $link-bghv-color;
+        transform: translateX(-2px);
       }
     }
   }
@@ -586,12 +691,16 @@ nav {
       color: $base-lighten-color;
       border: 1px solid $divider-color;
       padding: 10px 20px;
-      background: $background-color;
+      background: $background-lighten-color;
+      border-radius: 6px;
+      font-weight: 500;
+      transition: all 0.3s ease;
 
       &:hover, &:focus {
-        color: $link-lighten-color;
-        border: 1px solid $link-lighten-color;
+        color: $link-color;
+        border-color: $link-color;
         background-color: $link-bghv-color;
+        transform: translateX(2px);
       }
     }
   }
@@ -601,12 +710,29 @@ nav {
 .archive {
   a {
     color: $base-color;
+    transition: color 0.2s ease;
+
+    &:hover {
+      color: $link-color;
+    }
   }
   time {
     color: $base-lighten-color;
     font-size: $small-font-size;
     font-weight: 300;
     margin-left: 3px;
+  }
+
+  li {
+    padding: 4px 0;
+  }
+
+  h2 {
+    color: $link-color;
+    font-size: 20px;
+    margin-top: 1.5em;
+    padding-bottom: 0.3em;
+    border-bottom: 2px solid $divider-color;
   }
 }
 
@@ -624,23 +750,31 @@ nav {
 
     > a {
       display: inline-block;
-      margin: 1px;
+      margin: 3px 2px;
       color: $base-color;
       background-color: $tag-index-label-background-color;
-      border-radius: 3px;
+      border-radius: 16px;
+      transition: all 0.25s ease;
 
       &:hover {
-        background-color: $link-bghv-color;
+        background-color: $link-color;
+        color: #fff;
+        transform: translateY(-1px);
+
+        span.count {
+          background-color: rgba(255, 255, 255, 0.2);
+          color: #fff;
+        }
       }
 
       span {
         float: left;
-        padding: .5px 5px;
+        padding: 2px 8px;
 
         &.count {
           background-color: $tag-index-count-background-color;
-          border-radius: 0 3px 3px 0;
-
+          border-radius: 0 16px 16px 0;
+          transition: all 0.25s ease;
         }
       }
     }
@@ -650,6 +784,10 @@ nav {
 .tags > .tag {
   a {
     color: $base-color;
+
+    &:hover {
+      color: $link-color;
+    }
   }
   time {
     color: $base-lighten-color;
@@ -670,7 +808,7 @@ nav {
   clear:both;
   width:100%;
   bottom:0;
-  
+
   @include mobile {
     display: none;
   }
@@ -679,7 +817,7 @@ nav {
 
 .wrapper-footer-mobile {
   display: none;
-  
+
   @include mobile {
     display: block;
     width: 100%;
@@ -713,9 +851,11 @@ footer {
       height: 20px;
       width: 20px;
       fill: $base-lighten-color;
-      
+      transition: all 0.3s ease;
+
       &:hover {
-        fill: $link-lighten-color;
+        fill: $link-color;
+        transform: translateY(-2px);
       }
     }
 
@@ -733,9 +873,58 @@ footer {
   }
 }
 
+// Search bar
+.search-container {
+  margin-bottom: 1.5em;
+
+  #search-input {
+    width: 100% !important;
+    height: 42px;
+    color: $text-color;
+    background-color: #fff;
+    line-height: 42px;
+    padding: 0 18px;
+    border: 2px solid $divider-color;
+    font-size: 15px;
+    font-weight: 400;
+    font-family: $base-font;
+    border-radius: 21px;
+    outline: none;
+    box-sizing: border-box;
+    transition: all 0.3s ease;
+    box-shadow: none;
+
+    &::placeholder {
+      color: $base-lightener-color;
+    }
+
+    &:focus {
+      border-color: $link-color;
+      box-shadow: 0 0 0 3px rgba(91, 106, 191, 0.1);
+    }
+  }
+
+  #results-container {
+    li {
+      padding: 6px 0;
+
+      &:before {
+        content: '';
+      }
+
+      a {
+        color: $base-color;
+        font-weight: 500;
+
+        &:hover {
+          color: $link-color;
+        }
+      }
+    }
+  }
+}
+
 // Settled on moving the import of syntax highlighting to the bottom of the CSS
 // ... Otherwise it really bloats up the top of the CSS file and makes it difficult to find the start
 @import "highlights";
 @import "gitalk";
-
-
