@@ -2,6 +2,19 @@
   <title>{% if page.title %}{{ page.title }} – {% endif %}{{ site.name }} – {{ site.description }}</title>
 
   {% include meta.html %}
+
+  <!-- Apply the saved theme before first paint so there is no flash of the wrong theme -->
+  <script>
+    (function () {
+      try {
+        var saved = localStorage.getItem('theme');
+        if (saved === 'dark' || saved === 'light') {
+          document.documentElement.setAttribute('data-theme', saved);
+        }
+      } catch (e) {}
+    })();
+  </script>
+
   {% include fonts.html %}
 
   <link rel="stylesheet" type="text/css" href="{{ site.baseurl }}/style.css" />
@@ -17,8 +30,8 @@
         delimiters: [
           {left: "$$", right: "$$", display: true},
           {left: "$", right: "$", display: false},
-          {left: "\\(", right: "\\)", display: false},
-          {left: "\\[", right: "\\]", display: true}
+          {left: "\(", right: "\)", display: false},
+          {left: "\[", right: "\]", display: true}
         ],
         ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code"],
         throwOnError: false
@@ -27,8 +40,8 @@
   </script>
 
   <style>
-    .katex { font-size: 1.1em; }
-    .katex-display { overflow: auto hidden; }
+    .katex { font-size: 1.06em; }
+    .katex-display { overflow: auto hidden; padding: 0.2em 0; }
   </style>
 
   <script src="https://cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.js"></script>

@@ -1,18 +1,14 @@
-
 //
 // VARIABLES
 //
+// Color variables are thin aliases over the CSS custom properties declared in
+// `_theme.scss`, so every rule below automatically follows the active theme.
+//
 
-// Colors
-$blue: $oc-blue-8;
-
-// Grays
+// Legacy neutral aliases (still referenced by the vendored gitalk styles)
 $black: #000;
-$darkerGray: #222;
-$darkGray: #333;
-$gray: #666;
-$lightGray: #eee;
-$white: #fff;
+$white: var(--accent-contrast);
+$gray: var(--muted);
 
 // Font stacks
 $helvetica: Helvetica, Arial, sans-serif;
@@ -28,46 +24,66 @@ $code-font: "JetBrains Mono", "Fira Code", "Menlo", "Courier New", "Monaco", mon
 $base-font-size: 16px;
 $small-font-size: 14px;
 
-// Colors
-$base-color: #2c3e50;
-$base-lighten-color: #7f8c8d;
-$base-lightener-color: #bdc3c7;
+// Surfaces & text
+$background-color: var(--bg);
+$background-lighten-color: var(--surface);
+$surface-color: var(--surface);
+$surface-alt-color: var(--surface-2);
+$surface-sunken-color: var(--surface-3);
 
-$background-color: #f8f9fc;
-$background-lighten-color: #ffffff;
-$sidebar-gradient-start: #667eea;
-$sidebar-gradient-end: #764ba2;
+$base-color: var(--heading);
+$text-color: var(--text);
+$base-lighten-color: var(--muted);
+$base-lightener-color: var(--faint);
 
-$text-color: #34495e;
-$link-color: #5b6abf;
-$link-lighten-color: #7c8ae6;
-$link-bghv-color: #eef0ff;
-$divider-color: #e8ecf1;
+// Accents
+$link-color: var(--accent);
+$link-lighten-color: var(--accent-hover);
+$link-bghv-color: var(--accent-soft);
+$accent-soft-color: var(--accent-soft);
+$accent-softer-color: var(--accent-softer);
+$accent-contrast-color: var(--accent-contrast);
 
-$error-color: $oc-blue-8;
+// Lines
+$divider-color: var(--border);
+$divider-strong-color: var(--border-strong);
 
-$table-border-color: #e0e6ed;
-$table-background-color: #f7f9fc;
+$error-color: #e03131;
 
-$blockquote-color: #6c7a89;
-$blockquote-border-color: #5b6abf;
+$table-border-color: var(--border);
+$table-background-color: var(--surface-2);
 
-$footnote-link-border-color: $oc-gray-1;
-$footnote-link-background-over-color: $oc-gray-1;
+$blockquote-color: var(--muted);
+$blockquote-border-color: var(--accent);
 
-// $selection-color: $oc-black;
-$selection-background-color: #c3cfe2;
+$footnote-link-border-color: var(--border-strong);
+$footnote-link-background-over-color: var(--accent-soft);
 
-$tag-index-label-background-color: #eef0ff;
-$tag-index-count-background-color: #dde1f9;
+$selection-background-color: var(--selection);
 
-$footer-border-color: #e8ecf1;
-$footer-background-color: #f1f3f8;
+$tag-index-label-background-color: var(--accent-soft);
+$tag-index-count-background-color: var(--tag-count-bg);
+
+$footer-border-color: var(--border);
+$footer-background-color: transparent;
 
 // Shadows
-$card-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-$card-shadow-hover: 0 6px 20px rgba(0, 0, 0, 0.1);
-$sidebar-shadow: 2px 0 20px rgba(0, 0, 0, 0.05);
+$card-shadow: var(--shadow-sm);
+$card-shadow-hover: var(--shadow);
+$sidebar-shadow: var(--shadow-sm);
+
+// Radii
+$radius-sm: 8px;
+$radius: 12px;
+$radius-lg: 16px;
+$radius-pill: 999px;
+
+// Layout
+$sidebar-width: 288px;
+$toc-width: 248px;
+
+// Transitions
+$ease: cubic-bezier(0.22, 0.61, 0.36, 1);
 
 // List
 $li-bottom-space: 0.4em;
@@ -93,6 +109,12 @@ $dd-position: $dt-width+$dt-dd-space;
 // Mobile breakpoints
 @mixin mobile {
   @media screen and (max-width: 1200px) {
+    @content;
+  }
+}
+
+@mixin small-mobile {
+  @media screen and (max-width: 600px) {
     @content;
   }
 }

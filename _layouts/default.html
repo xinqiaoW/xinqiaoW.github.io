@@ -1,7 +1,9 @@
 <!DOCTYPE html>
-<html>
+<html lang="zh-CN">
   {% include head.html %}
   <body>
+    <div class="reading-progress" aria-hidden="true"></div>
+
     {% include nav.html %}
 
     {% if page.toc==true %}
@@ -14,21 +16,25 @@
       <div class="container">
         {{ content }}
       </div>
+
+      <div class="wrapper-footer-mobile">
+        <footer class="footer">
+          {% include footer.html %}
+        </footer>
+      </div>
     </div>
 
+    <button type="button" class="back-to-top" aria-label="回到顶部">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4.5 3.9 12.6a1.2 1.2 0 0 0 1.7 1.7l5.2-5.2V19a1.2 1.2 0 1 0 2.4 0V9.1l5.2 5.2a1.2 1.2 0 0 0 1.7-1.7L12 4.5z"/></svg>
+    </button>
+
+    {% if page.toc==true %}
+    <script>
+      document.getElementById("main").classList.add("withtoc");
+    </script>
+    {% endif %}
+
+    {% include scripts.html %}
     {% include analytics.html %}
   </body>
-
-  {% if page.toc==true %}
-  <script>
-    document.getElementById("main").classList.add("withtoc");
-  </script>
-  {% endif %}
-
-  <div class="wrapper-footer-mobile">
-    <footer class="footer">
-      {% include footer.html %}
-    </footer>
-  </div>
-
 </html>

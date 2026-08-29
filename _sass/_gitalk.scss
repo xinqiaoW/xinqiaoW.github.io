@@ -355,7 +355,7 @@
     margin-top: -0.1875em;
     margin-left: -0.375em;
     border-radius: 50%;
-    border: 1px solid $oc-white;
+    border: 1px solid $surface-color;
     border-top-color: $link-color;
     -webkit-animation: gt-kf-rotate 0.6s linear infinite;
             animation: gt-kf-rotate 0.6s linear infinite;
@@ -444,7 +444,7 @@
     margin-right: 0;
   }
   .gt-container .gt-btn-preview {
-    background-color: $oc-white;
+    background-color: $surface-color;
     color: $link-color;
   }
   .gt-container .gt-btn-preview:hover {
@@ -538,7 +538,7 @@
     position: absolute;
     right: 0;
     top: 2.375em;
-    background: $oc-white;
+    background: $surface-color;
     display: inline-block;
     border: 1px solid $divider-color;
     padding: 0.625em 0;
@@ -787,3 +787,67 @@
               transform: rotate(360deg);
     }
   }
+//
+// Dark-theme overrides for the vendored Gitalk widget.
+// The widget ships GitHub's light palette hardcoded, so the surfaces it paints
+// are pinned back to the site tokens when the dark theme is active.
+//
+@mixin gitalk-dark {
+  .gt-container {
+    color: var(--text);
+
+    .gt-header-textarea,
+    .gt-header-preview,
+    .gt-comment-content,
+    .gt-popup,
+    .gt-btn-preview {
+      background-color: var(--surface-2);
+      color: var(--text);
+      border-color: var(--border);
+    }
+
+    .gt-header-textarea::-webkit-input-placeholder { color: var(--faint); }
+    .gt-header-textarea::placeholder { color: var(--faint); }
+
+    .gt-comment-content:hover {
+      background-color: var(--surface-3);
+    }
+
+    .gt-comment-body,
+    .gt-comment-body p,
+    .gt-comment-body li,
+    .gt-comment-username,
+    .gt-header-controls-text,
+    .gt-counts,
+    .gt-comment-text {
+      color: var(--text);
+    }
+
+    .gt-comment-body pre,
+    .gt-comment-body code {
+      background-color: var(--code-bg);
+      color: var(--text);
+    }
+
+    .gt-meta,
+    .gt-comment-admin .gt-comment-content {
+      border-color: var(--border);
+    }
+
+    .gt-comment-date,
+    .gt-comment-like,
+    .gt-comment-reply {
+      color: var(--muted);
+    }
+
+    .gt-svg svg {
+      fill: var(--muted);
+    }
+  }
+}
+
+:root[data-theme="dark"] { @include gitalk-dark; }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { @include gitalk-dark; }
+}

@@ -1,0 +1,134 @@
+<script>
+(function () {
+  'use strict';
+
+  var root = document.documentElement;
+
+  /* ---------- Theme toggle ---------- */
+  var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)');
+
+  function currentTheme() {
+    var explicit = root.getAttribute('data-theme');
+    if (explicit) return explicit;
+    return (prefersDark && prefersDark.matches) ? 'dark' : 'light';
+  }
+
+  function syncToggleLabel() {
+    var label = document.querySelector('.theme-toggle__label');
+    var button = document.getElementById('theme-toggle');
+    if (!label || !button) return;
+    var next = currentTheme() === 'dark' ? '浅色模式' : '深色模式';
+    label.textContent = next;
+    button.setAttribute('aria-label', '切换到' + next);
+  }
+
+  var toggle = document.getElementById('theme-toggle');
+  if (toggle) {
+    toggle.addEventListener('click', function () {
+      var next = currentTheme() === 'dark' ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try { localStorage.setItem('theme', next); } catch (e) {}
+      syncToggleLabel();
+    });
+  }
+
+  // Follow the OS while the reader has not made an explicit choice
+  if (prefersDark && prefersDark.addEventListener) {
+    prefersDark.addEventListener('change', function () {
+      if (!root.getAttribute('data-theme')) syncToggleLabel();
+    });
+  }
+
+  syncToggleLabel();
+
+  /* ---------- Wide tables get their own scroll container ---------- */
+  document.querySelectorAll('.entry > table').forEach(function (table) {
+    var wrap = document.createElement('div');
+    wrap.className = 'table-scroll';
+    table.parentNode.insertBefore(wrap, table);
+    wrap.appendChild(table);
+  });
+
+  /* ---------- Reading progress ---------- */
+  var progress = document.querySelector('.reading-progress');
+  var backToTop = document.querySelector('.back-to-top');
+
+  function onScroll() {
+    var scrolled = window.pageYOffset || root.scrollTop;
+
+    if (progress) {
+      var height = root.scrollHeight - root.clientHeight;
+      var ratio = height > 0 ? Math.min(scrolled / height, 1) : 0;
+      progress.style.width = (ratio * 100) + '%';
+    }
+
+    if (backToTop) {
+      backToTop.classList.toggle('is-visible', scrolled > 400);
+    }
+  }
+
+  var ticking = false;
+  window.addEventListener('scroll', function () {
+    if (ticking) return;
+    ticking = true;
+    window.requestAnimationFrame(function () {
+      onScroll();
+      ticking = false;
+    });
+  }, { passive: true });
+
+  onScroll();
+
+  if (backToTop) {
+    backToTop.addEventListener('click', function () {
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  }
+
+  /* ---------- Highlight the section currently being read in the TOC ---------- */
+  var tocLinks = Array.prototype.slice.call(document.querySelectorAll('.toc a[href^="#"]'));
+
+  if (tocLinks.length && 'IntersectionObserver' in window) {
+    var byId = {};
+    var headings = [];
+
+    tocLinks.forEach(function (link) {
+      var id = decodeURIComponent(link.getAttribute('href').slice(1));
+      var heading = document.getElementById(id);
+      if (!heading) return;
+      byId[id] = link;
+      headings.push(heading);
+    });
+
+    var visible = [];
+
+    var observer = new IntersectionObserver(function (entries) {
+      entries.forEach(function (entry) {
+        var id = entry.target.id;
+        var index = visible.indexOf(id);
+        if (entry.isIntersecting && index === -1) visible.push(id);
+        if (!entry.isIntersecting && index !== -1) visible.splice(index, 1);
+      });
+
+      // Fall back to the last heading scrolled past when nothing is in view
+      var activeId = visible.length
+        ? headings.filter(function (h) { return visible.indexOf(h.id) !== -1; })[0].id
+        : null;
+
+      if (!activeId) {
+        for (var i = headings.length - 1; i >= 0; i--) {
+          if (headings[i].getBoundingClientRect().top < 100) {
+            activeId = headings[i].id;
+            break;
+          }
+        }
+      }
+
+      tocLinks.forEach(function (link) { link.classList.remove('is-active'); });
+      if (activeId && byId[activeId]) byId[activeId].classList.add('is-active');
+    }, { rootMargin: '-10% 0px -70% 0px', threshold: 0 });
+
+    headings.forEach(function (heading) { observer.observe(heading); });
+  }
+})();
+</script>

@@ -1,0 +1,130 @@
+//
+// THEME TOKENS
+//
+// All colors are exposed as CSS custom properties so the site can switch
+// between light and dark without duplicating rules. The SCSS variables in
+// `_variables.scss` simply point at these tokens.
+//
+// Resolution order:
+//   1. `:root`                              -> light palette (the default)
+//   2. `prefers-color-scheme: dark`          -> dark palette, unless the
+//      reader has explicitly chosen light via the toggle
+//   3. `[data-theme="dark"|"light"]`         -> explicit reader choice wins
+//
+
+@mixin theme-light {
+  --bg:              #f5f7fb;
+  --surface:         #ffffff;
+  --surface-2:       #f1f4fa;
+  --surface-3:       #e9edf6;
+
+  --heading:         #1b2333;
+  --text:            #39445a;
+  --muted:           #78849a;
+  --faint:           #a5aec0;
+
+  --border:          #e4e9f2;
+  --border-strong:   #d3dae7;
+
+  --accent:          #5865e0;
+  --accent-hover:    #4653cc;
+  --accent-soft:     #eceffd;
+  --accent-softer:   #f5f7ff;
+  --accent-ring:     rgba(88, 101, 224, 0.16);
+  --tag-count-bg:    #d9deff;
+  --accent-contrast: #ffffff;
+
+  --code-bg:         #f7f9fd;
+  --code-border:     #e4e9f2;
+  --inline-code-bg:  #f0f3fa;
+  --inline-code-fg:  #c2255c;
+
+  --selection:       #d8defb;
+
+  --shadow-sm:       0 1px 2px rgba(21, 30, 51, 0.05);
+  --shadow:          0 4px 16px rgba(21, 30, 51, 0.07);
+  --shadow-lg:       0 14px 38px rgba(21, 30, 51, 0.12);
+
+  --glow-1:          rgba(88, 101, 224, 0.10);
+  --glow-2:          rgba(147, 91, 214, 0.09);
+
+  // Syntax highlighting
+  --syn-comment:  #94a0b4;
+  --syn-keyword:  #7c3aed;
+  --syn-string:   #0d8f6f;
+  --syn-number:   #0f8a8a;
+  --syn-func:     #2563eb;
+  --syn-type:     #1d4ed8;
+  --syn-tag:      #d6336c;
+  --syn-var:      #b45309;
+  --syn-error:    #e03131;
+  --syn-add-bg:   #e6ffed;
+  --syn-add-fg:   #16794c;
+  --syn-del-bg:   #ffeef0;
+  --syn-del-fg:   #c92a2a;
+
+  color-scheme: light;
+}
+
+@mixin theme-dark {
+  --bg:              #0f131b;
+  --surface:         #161c26;
+  --surface-2:       #1b222e;
+  --surface-3:       #222b39;
+
+  --heading:         #e9eef7;
+  --text:            #b9c3d3;
+  --muted:           #8593a8;
+  --faint:           #6b7789;
+
+  --border:          #262f3d;
+  --border-strong:   #33404f;
+
+  --accent:          #8d97f7;
+  --accent-hover:    #a7aefa;
+  --accent-soft:     #1e2540;
+  --accent-softer:   #1a2033;
+  --accent-ring:     rgba(141, 151, 247, 0.22);
+  --tag-count-bg:    #2b3358;
+  --accent-contrast: #10141c;
+
+  --code-bg:         #131a24;
+  --code-border:     #232c3a;
+  --inline-code-bg:  #1d2531;
+  --inline-code-fg:  #f592b8;
+
+  --selection:       #2f3a63;
+
+  --shadow-sm:       0 1px 2px rgba(0, 0, 0, 0.4);
+  --shadow:          0 4px 18px rgba(0, 0, 0, 0.42);
+  --shadow-lg:       0 16px 42px rgba(0, 0, 0, 0.55);
+
+  --glow-1:          rgba(88, 101, 224, 0.16);
+  --glow-2:          rgba(147, 91, 214, 0.13);
+
+  // Syntax highlighting
+  --syn-comment:  #6d7a8d;
+  --syn-keyword:  #c095f7;
+  --syn-string:   #74d3a6;
+  --syn-number:   #62d0c8;
+  --syn-func:     #79b0f8;
+  --syn-type:     #8fbcfb;
+  --syn-tag:      #f58bb0;
+  --syn-var:      #e5b567;
+  --syn-error:    #ff8787;
+  --syn-add-bg:   #10291d;
+  --syn-add-fg:   #85e0ad;
+  --syn-del-bg:   #2c1418;
+  --syn-del-fg:   #ff9a9a;
+
+  color-scheme: dark;
+}
+
+:root { @include theme-light; }
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) { @include theme-dark; }
+}
+
+:root[data-theme="dark"]  { @include theme-dark; }
+:root[data-theme="light"] { @include theme-light; }

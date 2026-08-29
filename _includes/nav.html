@@ -2,8 +2,8 @@
   <header class="sidebar clearfix">
     <div class="site-info">
       {% if site.avatar %}
-        <a href="{{ site.baseurl }}/" class="site-avatar"><img src="{{ site.avatar }}" /></a>
-      {% endif %} 
+        <a href="{{ site.baseurl }}/" class="site-avatar"><img src="{{ site.avatar }}" alt="{{ site.name }}" /></a>
+      {% endif %}
       <h1 class="site-name"><a href="{{ site.baseurl }}/">{{ site.name }}</a></h1>
       <p class="site-description">{{ site.description }}</p>
     </div>
@@ -15,10 +15,19 @@
       {% if nav.url contains 'http://' or nav.url contains 'https://' %}
       <a href="{{ nav.url }}">{{ nav.name }}</a>
       {% else %}
-      <a href="{{ site.baseurl }}{{ nav.url }}">{{ nav.name }}</a>
+      {% assign nav_path = nav.url | remove_first: '/' %}
+      {% assign is_home = false %}
+      {% if nav.url == '/' and page.url == '/' %}{% assign is_home = true %}{% endif %}
+      <a href="{{ site.baseurl }}{{ nav.url }}"{% if is_home %} class="is-active"{% elsif nav_path != '' and page.url contains nav_path %} class="is-active"{% endif %}>{{ nav.name }}</a>
       {% endif %}
       {% endfor %}
     </nav>
+
+    <button type="button" class="theme-toggle" id="theme-toggle" aria-label="切换深色模式">
+      <svg class="theme-toggle__sun" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 17a5 5 0 1 1 0-10 5 5 0 0 1 0 10zm0-13a1 1 0 0 1-1-1V1a1 1 0 1 1 2 0v2a1 1 0 0 1-1 1zm0 20a1 1 0 0 1-1-1v-2a1 1 0 1 1 2 0v2a1 1 0 0 1-1 1zM4 13H2a1 1 0 1 1 0-2h2a1 1 0 1 1 0 2zm18 0h-2a1 1 0 1 1 0-2h2a1 1 0 1 1 0 2zM5.6 6.99a1 1 0 0 1-.7-.28L3.48 5.3a1 1 0 0 1 1.42-1.42l1.4 1.42a1 1 0 0 1-.7 1.7zm12.8 12.8a1 1 0 0 1-.7-.29l-1.4-1.41a1 1 0 0 1 1.41-1.42l1.42 1.42a1 1 0 0 1-.71 1.7zM18.4 6.99a1 1 0 0 1-.71-1.7l1.42-1.4a1 1 0 1 1 1.4 1.4l-1.4 1.42a1 1 0 0 1-.71.28zM5.6 19.79a1 1 0 0 1-.71-1.71l1.41-1.42A1 1 0 0 1 7.72 18.1L6.3 19.5a1 1 0 0 1-.7.29z"/></svg>
+      <svg class="theme-toggle__moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M21.53 15.93a1 1 0 0 0-1.1-.31 7.5 7.5 0 0 1-9.9-9.9 1 1 0 0 0-1.3-1.32A9.5 9.5 0 1 0 21.84 17a1 1 0 0 0-.31-1.07z"/></svg>
+      <span class="theme-toggle__label">深色模式</span>
+    </button>
   </div>
 
   <div class="wrapper-footer-desktop">
