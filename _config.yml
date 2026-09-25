@@ -30,6 +30,9 @@ navigation:
   - name: 标签
     url: /tags
 
+# 短期目标：显示在每个页面右下角的悬浮窗里，改这一行即可更换；留空则不显示
+short_term_goal: 实现 Sts2 静默猎手 AI 机器人
+
 # Pagination
 paginate: 8
 

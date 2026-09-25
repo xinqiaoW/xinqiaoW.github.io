@@ -1121,6 +1121,122 @@ nav {
   }
 }
 
+// Short-term goal: a floating pixel window shown on every page
+.goal-widget {
+  position: fixed;
+  right: 26px;
+  bottom: 84px;
+  z-index: 14;
+  width: 250px;
+  background: $surface-color;
+  border: 3px solid $ink;
+  box-shadow: 6px 6px 0 var(--pop-violet);
+  animation: goal-float 3.2s steps(4) infinite alternate;
+
+  @include small-mobile {
+    right: 16px;
+    bottom: 70px;
+    width: 210px;
+  }
+
+  &.is-collapsed {
+    width: auto;
+
+    .goal-widget__body { display: none; }
+    .goal-widget__bar { border-bottom: 0; }
+  }
+}
+
+@keyframes goal-float {
+  from { transform: translateY(0); }
+  to   { transform: translateY(-6px); }
+}
+
+.goal-widget__bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 3px 4px 3px 10px;
+  background: var(--pop-pink);
+  border-bottom: 3px solid $ink;
+}
+
+.goal-widget__title {
+  font-family: $heading-font;
+  font-size: 15px;
+  letter-spacing: 1px;
+  color: #1a1433;
+  white-space: nowrap;
+}
+
+.goal-widget__toggle {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: $pixel-font;
+  font-size: 10px;
+  line-height: 1;
+  color: #1a1433;
+  background: var(--pop-yellow);
+  border: 2px solid #1a1433;
+  cursor: pointer;
+
+  &:hover { background: var(--pop-cyan); }
+}
+
+.goal-widget__body {
+  padding: 12px 14px 10px;
+}
+
+.goal-widget__text {
+  margin: 0 0 10px;
+  font-size: 14.5px;
+  font-weight: 700;
+  line-height: 1.6;
+  color: $base-color;
+}
+
+.goal-widget__meter {
+  height: 12px;
+  padding: 2px;
+  border: 2px solid $ink;
+
+  span {
+    display: block;
+    height: 100%;
+    background: repeating-linear-gradient(90deg,
+      var(--pop-lime) 0 8px, transparent 8px 12px);
+    background-size: 24px 100%;
+    animation: goal-meter 1.2s steps(6) infinite;
+  }
+}
+
+@keyframes goal-meter {
+  from { background-position: 0 0; }
+  to   { background-position: 24px 0; }
+}
+
+.goal-widget__status {
+  margin: 8px 0 0;
+  font-family: $pixel-font;
+  font-size: 8px;
+  line-height: 1.6;
+  color: $base-lighten-color;
+}
+
+.goal-widget__cursor {
+  animation: goal-blink 1s steps(1) infinite;
+}
+
+@keyframes goal-blink {
+  50% { opacity: 0; }
+}
+
 .pagination {
   border-top: 2px dashed $divider-color;
   margin-top: 40px;

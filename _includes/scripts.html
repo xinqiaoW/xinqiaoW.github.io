@@ -85,6 +85,33 @@
     });
   }
 
+  /* ---------- Short-term goal widget: collapse state is remembered ---------- */
+  var goalWidget = document.getElementById('goal-widget');
+  var goalToggle = document.getElementById('goal-widget-toggle');
+
+  if (goalWidget && goalToggle) {
+    var setGoalCollapsed = function (collapsed) {
+      goalWidget.classList.toggle('is-collapsed', collapsed);
+      goalToggle.setAttribute('aria-expanded', String(!collapsed));
+      goalToggle.setAttribute('aria-label', collapsed ? '展开短期目标' : '收起短期目标');
+      goalToggle.firstElementChild.textContent = collapsed ? '+' : '_';
+    };
+
+    var savedGoal = null;
+    try { savedGoal = localStorage.getItem('goal-widget'); } catch (e) {}
+    // Small screens start collapsed so the window does not cover the text
+    var startCollapsed = savedGoal
+      ? savedGoal === 'collapsed'
+      : window.matchMedia('(max-width: 600px)').matches;
+    setGoalCollapsed(startCollapsed);
+
+    goalToggle.addEventListener('click', function () {
+      var collapsed = !goalWidget.classList.contains('is-collapsed');
+      setGoalCollapsed(collapsed);
+      try { localStorage.setItem('goal-widget', collapsed ? 'collapsed' : 'expanded'); } catch (e) {}
+    });
+  }
+
   /* ---------- Highlight the section currently being read in the TOC ---------- */
   var tocLinks = Array.prototype.slice.call(document.querySelectorAll('.toc a[href^="#"]'));
 
