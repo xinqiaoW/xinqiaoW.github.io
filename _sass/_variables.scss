@@ -17,7 +17,8 @@ $georgia: Georgia, serif;
 
 // Fonts
 $base-font: "Inter", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-$heading-font: "Noto Serif", "Noto Serif SC", "Source Han Serif SC", "Songti SC", Georgia, serif;
+$heading-font: "ZCOOL QingKe HuangYou", "Noto Sans SC", "PingFang SC", "Microsoft YaHei", sans-serif;
+$pixel-font: "Press Start 2P", "ZCOOL QingKe HuangYou", monospace;
 $code-font: "JetBrains Mono", "Fira Code", "Menlo", "Courier New", "Monaco", monospace;
 
 // Font sizes
@@ -72,11 +73,21 @@ $card-shadow: var(--shadow-sm);
 $card-shadow-hover: var(--shadow);
 $sidebar-shadow: var(--shadow-sm);
 
-// Radii
-$radius-sm: 8px;
-$radius: 12px;
-$radius-lg: 16px;
-$radius-pill: 999px;
+// Radii (pixel style: everything is square)
+$radius-sm: 0;
+$radius: 0;
+$radius-lg: 0;
+$radius-pill: 0;
+
+// Line art
+$ink: var(--ink);
+$line: 2.5px solid var(--ink);
+$pop-colors: var(--pop-pink), var(--pop-cyan), var(--pop-yellow), var(--pop-lime), var(--pop-violet), var(--pop-orange);
+
+// A hard-stop rainbow made of pixel blocks
+$pixel-rainbow: repeating-linear-gradient(90deg,
+  var(--pop-pink) 0 12px, var(--pop-orange) 12px 24px, var(--pop-yellow) 24px 36px,
+  var(--pop-lime) 36px 48px, var(--pop-cyan) 48px 60px, var(--pop-violet) 60px 72px);
 
 // Layout
 $sidebar-width: 288px;

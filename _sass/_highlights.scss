@@ -13,8 +13,8 @@ code.highlighter-rouge {
   font-size: 87%;
   color: var(--inline-code-fg);
   background-color: var(--inline-code-bg);
-  padding: .15em .42em;
-  border-radius: 5px;
+  padding: .1em .4em;
+  border: 1.5px solid var(--ink);
   font-weight: 500;
   word-break: break-word;
 }
@@ -28,8 +28,9 @@ div.highlight > pre,
 figure.highlight pre {
   font-size: 13.5px;
   padding: 1.1em 1.3em;
-  border: 1px solid var(--code-border);
-  border-radius: $radius;
+  border: 2.5px solid var(--code-border);
+  border-top-width: 12px;
+  box-shadow: 5px 5px 0 var(--pop-violet);
   margin: 1.6em 0;
   overflow-x: auto;
   line-height: 1.65;

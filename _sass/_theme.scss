@@ -5,6 +5,9 @@
 // between light and dark without duplicating rules. The SCSS variables in
 // `_variables.scss` simply point at these tokens.
 //
+// The look is "pixel + line art": ink outlines, hard offset shadows with no
+// blur, and a candy palette (`--pop-*`) used for accents and decorations.
+//
 // Resolution order:
 //   1. `:root`                              -> light palette (the default)
 //   2. `prefers-color-scheme: dark`          -> dark palette, unless the
@@ -13,109 +16,123 @@
 //
 
 @mixin theme-light {
-  --bg:              #f5f7fb;
+  --bg:              #fff8e7;
   --surface:         #ffffff;
-  --surface-2:       #f1f4fa;
-  --surface-3:       #e9edf6;
+  --surface-2:       #fff4d9;
+  --surface-3:       #ffe9b3;
 
-  --heading:         #1b2333;
-  --text:            #39445a;
-  --muted:           #78849a;
-  --faint:           #a5aec0;
+  --heading:         #1a1433;
+  --text:            #2f2a45;
+  --muted:           #625b7d;
+  --faint:           #8f88a8;
 
-  --border:          #e4e9f2;
-  --border-strong:   #d3dae7;
+  --ink:             #1a1433;
+  --shadow-ink:      #1a1433;
+  --border:          #1a1433;
+  --border-strong:   #1a1433;
+  --grid:            rgba(26, 20, 51, 0.07);
 
-  --accent:          #5865e0;
-  --accent-hover:    #4653cc;
-  --accent-soft:     #eceffd;
-  --accent-softer:   #f5f7ff;
-  --accent-ring:     rgba(88, 101, 224, 0.16);
-  --tag-count-bg:    #d9deff;
+  --pop-pink:        #ff4fa3;
+  --pop-cyan:        #22d3ee;
+  --pop-yellow:      #ffd60a;
+  --pop-lime:        #84e33b;
+  --pop-violet:      #8b5cf6;
+  --pop-orange:      #ff8c42;
+
+  --accent:          #6d28d9;
+  --accent-hover:    #e0197d;
+  --accent-soft:     #ffe45c;
+  --accent-softer:   #fff3c4;
+  --accent-ring:     rgba(139, 92, 246, 0.35);
+  --tag-count-bg:    #7cecff;
   --accent-contrast: #ffffff;
 
-  --code-bg:         #f7f9fd;
-  --code-border:     #e4e9f2;
-  --inline-code-bg:  #f0f3fa;
-  --inline-code-fg:  #c2255c;
+  --code-bg:         #fffdf6;
+  --code-border:     #1a1433;
+  --inline-code-bg:  #e3fbff;
+  --inline-code-fg:  #d6246e;
 
-  --selection:       #d8defb;
+  --selection:       #ffe45c;
 
-  --shadow-sm:       0 1px 2px rgba(21, 30, 51, 0.05);
-  --shadow:          0 4px 16px rgba(21, 30, 51, 0.07);
-  --shadow-lg:       0 14px 38px rgba(21, 30, 51, 0.12);
-
-  --glow-1:          rgba(88, 101, 224, 0.10);
-  --glow-2:          rgba(147, 91, 214, 0.09);
+  --shadow-sm:       3px 3px 0 var(--shadow-ink);
+  --shadow:          5px 5px 0 var(--shadow-ink);
+  --shadow-lg:       8px 8px 0 var(--shadow-ink);
 
   // Syntax highlighting
-  --syn-comment:  #94a0b4;
-  --syn-keyword:  #7c3aed;
-  --syn-string:   #0d8f6f;
-  --syn-number:   #0f8a8a;
-  --syn-func:     #2563eb;
-  --syn-type:     #1d4ed8;
-  --syn-tag:      #d6336c;
-  --syn-var:      #b45309;
+  --syn-comment:  #948db0;
+  --syn-keyword:  #d6246e;
+  --syn-string:   #0c8f55;
+  --syn-number:   #0a86a8;
+  --syn-func:     #6d28d9;
+  --syn-type:     #2952e3;
+  --syn-tag:      #e8590c;
+  --syn-var:      #b5530a;
   --syn-error:    #e03131;
-  --syn-add-bg:   #e6ffed;
-  --syn-add-fg:   #16794c;
-  --syn-del-bg:   #ffeef0;
-  --syn-del-fg:   #c92a2a;
+  --syn-add-bg:   #e3ffd6;
+  --syn-add-fg:   #1f7a1f;
+  --syn-del-bg:   #ffe3ef;
+  --syn-del-fg:   #c2185b;
 
   color-scheme: light;
 }
 
 @mixin theme-dark {
-  --bg:              #0f131b;
-  --surface:         #161c26;
-  --surface-2:       #1b222e;
-  --surface-3:       #222b39;
+  --bg:              #15102e;
+  --surface:         #1f1842;
+  --surface-2:       #271f52;
+  --surface-3:       #312766;
 
-  --heading:         #e9eef7;
-  --text:            #b9c3d3;
-  --muted:           #8593a8;
-  --faint:           #6b7789;
+  --heading:         #fdf8ff;
+  --text:            #ddd6f3;
+  --muted:           #aba2cf;
+  --faint:           #8078a8;
 
-  --border:          #262f3d;
-  --border-strong:   #33404f;
+  --ink:             #e9e1ff;
+  --shadow-ink:      #ff4fa3;
+  --border:          #e9e1ff;
+  --border-strong:   #e9e1ff;
+  --grid:            rgba(233, 225, 255, 0.06);
 
-  --accent:          #8d97f7;
-  --accent-hover:    #a7aefa;
-  --accent-soft:     #1e2540;
-  --accent-softer:   #1a2033;
-  --accent-ring:     rgba(141, 151, 247, 0.22);
-  --tag-count-bg:    #2b3358;
-  --accent-contrast: #10141c;
+  --pop-pink:        #ff5cb0;
+  --pop-cyan:        #3ce6ff;
+  --pop-yellow:      #ffe03d;
+  --pop-lime:        #9dff5c;
+  --pop-violet:      #a78bfa;
+  --pop-orange:      #ff9e5e;
 
-  --code-bg:         #131a24;
-  --code-border:     #232c3a;
-  --inline-code-bg:  #1d2531;
-  --inline-code-fg:  #f592b8;
+  --accent:          #7df9ff;
+  --accent-hover:    #ffe03d;
+  --accent-soft:     #4a2a8a;
+  --accent-softer:   #251c50;
+  --accent-ring:     rgba(125, 249, 255, 0.3);
+  --tag-count-bg:    #6d28d9;
+  --accent-contrast: #15102e;
 
-  --selection:       #2f3a63;
+  --code-bg:         #120d28;
+  --code-border:     #e9e1ff;
+  --inline-code-bg:  #2d2260;
+  --inline-code-fg:  #ff9ad0;
 
-  --shadow-sm:       0 1px 2px rgba(0, 0, 0, 0.4);
-  --shadow:          0 4px 18px rgba(0, 0, 0, 0.42);
-  --shadow-lg:       0 16px 42px rgba(0, 0, 0, 0.55);
+  --selection:       #6d28d9;
 
-  --glow-1:          rgba(88, 101, 224, 0.16);
-  --glow-2:          rgba(147, 91, 214, 0.13);
+  --shadow-sm:       3px 3px 0 var(--shadow-ink);
+  --shadow:          5px 5px 0 var(--shadow-ink);
+  --shadow-lg:       8px 8px 0 var(--shadow-ink);
 
   // Syntax highlighting
-  --syn-comment:  #6d7a8d;
-  --syn-keyword:  #c095f7;
-  --syn-string:   #74d3a6;
-  --syn-number:   #62d0c8;
-  --syn-func:     #79b0f8;
-  --syn-type:     #8fbcfb;
-  --syn-tag:      #f58bb0;
-  --syn-var:      #e5b567;
+  --syn-comment:  #8a81b3;
+  --syn-keyword:  #ff7ac6;
+  --syn-string:   #9dff7a;
+  --syn-number:   #7df9ff;
+  --syn-func:     #c4a8ff;
+  --syn-type:     #8fb8ff;
+  --syn-tag:      #ffb86b;
+  --syn-var:      #ffe03d;
   --syn-error:    #ff8787;
-  --syn-add-bg:   #10291d;
-  --syn-add-fg:   #85e0ad;
-  --syn-del-bg:   #2c1418;
-  --syn-del-fg:   #ff9a9a;
+  --syn-add-bg:   #173a1c;
+  --syn-add-fg:   #9dff7a;
+  --syn-del-bg:   #3d1430;
+  --syn-del-fg:   #ff9ad0;
 
   color-scheme: dark;
 }
