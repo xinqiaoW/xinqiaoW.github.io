@@ -1,15 +1,22 @@
-{% if site.short_term_goal %}
-<aside class="goal-widget" id="goal-widget" aria-label="短期目标">
-  <div class="goal-widget__bar">
-    <span class="goal-widget__title">★ 短期目标</span>
-    <button type="button" class="goal-widget__toggle" id="goal-widget-toggle" aria-expanded="true" aria-controls="goal-widget-body" aria-label="收起短期目标">
-      <span aria-hidden="true">_</span>
-    </button>
-  </div>
-  <div class="goal-widget__body" id="goal-widget-body">
-    <p class="goal-widget__text">{{ site.short_term_goal }}</p>
-    <div class="goal-widget__meter" aria-hidden="true"><span></span></div>
-    <p class="goal-widget__status">IN PROGRESS<span class="goal-widget__cursor">_</span></p>
-  </div>
-</aside>
+{% if site.short_term_goals.size > 0 %}
+<div class="goal-widgets">
+  {% for goal in site.short_term_goals %}
+    {% assign goal_text = goal | append: "" | strip %}
+    {% if goal_text != "" %}
+    <aside class="goal-widget" id="goal-widget-{{ forloop.index }}" data-storage-key="goal-widget-{{ forloop.index }}" style="--goal-i: {{ forloop.index0 }}" aria-label="短期目标">
+      <div class="goal-widget__bar">
+        <span class="goal-widget__title">★ 短期目标</span>
+        <button type="button" class="goal-widget__toggle" aria-expanded="true" aria-controls="goal-widget-body-{{ forloop.index }}" aria-label="收起短期目标">
+          <span aria-hidden="true">_</span>
+        </button>
+      </div>
+      <div class="goal-widget__body" id="goal-widget-body-{{ forloop.index }}">
+        <p class="goal-widget__text">{{ goal_text }}</p>
+        <div class="goal-widget__meter" aria-hidden="true"><span></span></div>
+        <p class="goal-widget__status">IN PROGRESS<span class="goal-widget__cursor">_</span></p>
+      </div>
+    </aside>
+    {% endif %}
+  {% endfor %}
+</div>
 {% endif %}

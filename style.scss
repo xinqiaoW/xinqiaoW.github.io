@@ -1121,21 +1121,32 @@ nav {
   }
 }
 
-// Short-term goal: a floating pixel window shown on every page
-.goal-widget {
+// Short-term goals: one floating pixel window per configured item
+.goal-widgets {
   position: fixed;
   right: 26px;
   bottom: 84px;
   z-index: 14;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-end;
+  gap: 16px;
+
+  @include small-mobile {
+    right: 16px;
+    bottom: 70px;
+  }
+}
+
+.goal-widget {
   width: 250px;
   background: $surface-color;
   border: 3px solid $ink;
   box-shadow: 6px 6px 0 var(--pop-violet);
   animation: goal-float 3.2s steps(4) infinite alternate;
+  animation-delay: calc(var(--goal-i, 0) * -0.45s);
 
   @include small-mobile {
-    right: 16px;
-    bottom: 70px;
     width: 210px;
   }
 

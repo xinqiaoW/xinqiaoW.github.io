@@ -85,11 +85,16 @@
     });
   }
 
-  /* ---------- Short-term goal widget: collapse state is remembered ---------- */
-  var goalWidget = document.getElementById('goal-widget');
-  var goalToggle = document.getElementById('goal-widget-toggle');
+  /* ---------- Short-term goal widgets: each collapse state is remembered ---------- */
+  var goalWidgets = document.querySelectorAll('.goal-widget');
+  var goalSmallScreen = window.matchMedia('(max-width: 600px)').matches;
 
-  if (goalWidget && goalToggle) {
+  Array.prototype.forEach.call(goalWidgets, function (goalWidget) {
+    var goalToggle = goalWidget.querySelector('.goal-widget__toggle');
+    if (!goalToggle) return;
+
+    var storageKey = goalWidget.getAttribute('data-storage-key') || 'goal-widget';
+
     var setGoalCollapsed = function (collapsed) {
       goalWidget.classList.toggle('is-collapsed', collapsed);
       goalToggle.setAttribute('aria-expanded', String(!collapsed));
@@ -98,19 +103,23 @@
     };
 
     var savedGoal = null;
-    try { savedGoal = localStorage.getItem('goal-widget'); } catch (e) {}
-    // Small screens start collapsed so the window does not cover the text
+    try { savedGoal = localStorage.getItem(storageKey); } catch (e) {}
+    // The original single window stored its state under "goal-widget"
+    if (!savedGoal && storageKey === 'goal-widget-1') {
+      try { savedGoal = localStorage.getItem('goal-widget'); } catch (e) {}
+    }
+    // Small screens start collapsed so the windows do not cover the text
     var startCollapsed = savedGoal
       ? savedGoal === 'collapsed'
-      : window.matchMedia('(max-width: 600px)').matches;
+      : goalSmallScreen;
     setGoalCollapsed(startCollapsed);
 
     goalToggle.addEventListener('click', function () {
       var collapsed = !goalWidget.classList.contains('is-collapsed');
       setGoalCollapsed(collapsed);
-      try { localStorage.setItem('goal-widget', collapsed ? 'collapsed' : 'expanded'); } catch (e) {}
+      try { localStorage.setItem(storageKey, collapsed ? 'collapsed' : 'expanded'); } catch (e) {}
     });
-  }
+  });
 
   /* ---------- Highlight the section currently being read in the TOC ---------- */
   var tocLinks = Array.prototype.slice.call(document.querySelectorAll('.toc a[href^="#"]'));
